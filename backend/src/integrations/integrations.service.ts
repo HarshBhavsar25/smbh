@@ -19,9 +19,24 @@ export class IntegrationsService {
 
     // 2. Initialize Firebase Admin
     try {
-      const serviceAccountPath = path.join(process.cwd(), 'firebase-service-account.json');
-      if (fs.existsSync(serviceAccountPath)) {
-        const serviceAccount = require(serviceAccountPath);
+      let serviceAccount: any = null;
+      
+      if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+        try {
+          serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+          this.logger.log('Firebase Service Account loaded from environment variable.');
+        } catch (e) {
+          this.logger.error(`Error parsing FIREBASE_SERVICE_ACCOUNT env variable: ${e.message}`);
+        }
+      } else {
+        const serviceAccountPath = path.join(process.cwd(), 'firebase-service-account.json');
+        if (fs.existsSync(serviceAccountPath)) {
+          serviceAccount = require(serviceAccountPath);
+          this.logger.log('Firebase Service Account loaded from local file.');
+        }
+      }
+
+      if (serviceAccount) {
         if (!admin.apps.length) {
           admin.initializeApp({
             credential: admin.credential.cert(serviceAccount)
@@ -29,7 +44,7 @@ export class IntegrationsService {
           this.logger.log('Firebase Admin SDK initialized successfully.');
         }
       } else {
-        this.logger.warn('firebase-service-account.json not found, skipping FCM init.');
+        this.logger.warn('Firebase Service Account not found in environment variable or local file, skipping FCM init.');
       }
     } catch (error) {
       this.logger.error(`Could not initialize Firebase Admin SDK: ${error.message}`);

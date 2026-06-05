@@ -1,0 +1,579 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { 
+  CreditCard, Plus, Trash2, Calendar, Users, Loader2, X, AlertTriangle, Check, Search, Eye, Filter 
+} from "lucide-react";
+
+export default function FeesAdminPage() {
+  const [payments, setPayments] = useState<any[]>([]);
+  const [students, setStudents] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  // Search and Filters
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("ALL"); // ALL, PENDING, PAID, REJECTED
+  const [timeFilter, setTimeFilter] = useState("ALL_TIME"); // ALL_TIME, THIS_MONTH, THIS_YEAR
+  const [viewScreenshotUrl, setViewScreenshotUrl] = useState<string | null>(null);
+
+  const [formData, setFormData] = useState({
+    studentId: "",
+    amount: "",
+    status: "PAID",
+    utr: ""
+  });
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    setIsLoading(true);
+    const token = localStorage.getItem("token");
+    const headers = { "Authorization": `Bearer ${token}` };
+
+    try {
+      const payRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/fees`, { headers });
+      const payData = await payRes.json();
+      if (Array.isArray(payData)) {
+        setPayments(payData);
+      }
+
+      const studRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/students`, { headers });
+      const studData = await studRes.json();
+      if (Array.isArray(studData)) {
+        setStudents(studData);
+      }
+    } catch (err) {
+      console.error("Error fetching data", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleOpenModal = () => {
+    setFormData({
+      studentId: "",
+      amount: "",
+      status: "PAID",
+      utr: ""
+    });
+    setError("");
+    setIsModalOpen(true);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setError("");
+
+    const token = localStorage.getItem("token");
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/fees`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          studentId: formData.studentId,
+          amount: Number(formData.amount),
+          status: formData.status,
+          utr: formData.utr || "OFFLINE_RECORD"
+        })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || "Failed to create fee payment record");
+      }
+
+      setIsModalOpen(false);
+      fetchData();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleApprove = async (id: string) => {
+    const token = localStorage.getItem("token");
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/fees/${id}/approve`, {
+        method: "PATCH",
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      if (res.ok) {
+        fetchData();
+      }
+    } catch (err) {
+      console.error("Approve error", err);
+    }
+  };
+
+  const handleReject = async (id: string) => {
+    if (!confirm("Are you sure you want to reject this payment request?")) return;
+    const token = localStorage.getItem("token");
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/fees/${id}/reject`, {
+        method: "PATCH",
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      if (res.ok) {
+        fetchData();
+      }
+    } catch (err) {
+      console.error("Reject error", err);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this payment record?")) return;
+    const token = localStorage.getItem("token");
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/fees/${id}`, {
+        method: "DELETE",
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      if (res.ok) {
+        fetchData();
+      }
+    } catch (err) {
+      console.error("Delete payment error", err);
+    }
+  };
+
+  // Filter payments
+  const filteredPayments = payments.filter((pay) => {
+    const nameMatch = pay.student?.fullName?.toLowerCase().includes(searchTerm.toLowerCase());
+    const statusMatch = statusFilter === "ALL" || pay.status === statusFilter;
+    
+    // Time filter
+    const payDate = new Date(pay.paymentDate);
+    const now = new Date();
+    let timeMatch = true;
+    if (timeFilter === "THIS_MONTH") {
+      timeMatch = payDate.getMonth() === now.getMonth() && payDate.getFullYear() === now.getFullYear();
+    } else if (timeFilter === "THIS_YEAR") {
+      timeMatch = payDate.getFullYear() === now.getFullYear();
+    }
+
+    return nameMatch && statusMatch && timeMatch;
+  });
+
+  const filteredPendingResidents = students
+    .filter(s => s.feeStatus === "PENDING" || s.feeStatus === "REJECTED" || !s.feeStatus)
+    .filter(s => s.fullName?.toLowerCase().includes(searchTerm.toLowerCase()));
+
+  // Analytics
+  const totalCollected = payments
+    .filter(p => p.status === "PAID")
+    .reduce((sum, p) => sum + p.amount, 0);
+
+  const pendingApprovalsCount = payments.filter(p => p.status === "PENDING").length;
+  const pendingStudentsCount = students.filter(s => s.feeStatus === "PENDING").length;
+  const paidStudentsCount = students.filter(s => s.feeStatus === "PAID").length;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-white mb-2">Fee Management</h1>
+          <p className="text-muted-foreground">Track billing collections, pending student fees, and verify uploads.</p>
+        </div>
+        <button 
+          onClick={handleOpenModal}
+          className="px-5 py-2.5 bg-primary text-primary-foreground rounded-xl font-medium text-sm flex items-center gap-2 hover:bg-primary/90 transition-colors"
+        >
+          <Plus size={18} /> Record Fee Payment
+        </button>
+      </div>
+
+      {/* Analytics Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div 
+          onClick={() => setStatusFilter("PAID")}
+          className="glass-card p-6 rounded-3xl border border-white/5 bg-[#121214] cursor-pointer hover:border-primary/30 hover:-translate-y-0.5 transition-all"
+        >
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Total Collected</p>
+          <h3 className="text-3xl font-black text-white">₹{totalCollected.toLocaleString("en-IN")}</h3>
+        </div>
+        <div 
+          onClick={() => setStatusFilter("PENDING")}
+          className="glass-card p-6 rounded-3xl border border-white/5 bg-[#121214] cursor-pointer hover:border-amber-500/30 hover:-translate-y-0.5 transition-all"
+        >
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Pending Approvals</p>
+          <h3 className="text-3xl font-black text-amber-500">{pendingApprovalsCount}</h3>
+        </div>
+        <div 
+          onClick={() => setStatusFilter("PAID")}
+          className="glass-card p-6 rounded-3xl border border-white/5 bg-[#121214] cursor-pointer hover:border-emerald-500/30 hover:-translate-y-0.5 transition-all"
+        >
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Paid Residents</p>
+          <h3 className="text-3xl font-black text-emerald-500">{paidStudentsCount}</h3>
+        </div>
+        <div 
+          onClick={() => setStatusFilter("PENDING_RESIDENTS")}
+          className="glass-card p-6 rounded-3xl border border-white/5 bg-[#121214] cursor-pointer hover:border-red-500/30 hover:-translate-y-0.5 transition-all"
+        >
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Pending Residents</p>
+          <h3 className="text-3xl font-black text-red-500">{pendingStudentsCount}</h3>
+        </div>
+      </div>
+
+      {/* Filters & Search Control */}
+      <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-[#121214] p-4 rounded-2xl border border-white/5">
+        <div className="relative w-full md:max-w-xs">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+          <input
+            type="text"
+            placeholder="Search resident..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full bg-[#16161a] border border-white/5 rounded-xl py-2.5 pl-10 pr-4 text-white text-sm focus:outline-none focus:ring-1 focus:ring-primary/50"
+          />
+        </div>
+
+        <div className="flex flex-wrap gap-3 w-full md:w-auto">
+          {/* Status Filter */}
+          <div className="flex flex-wrap bg-[#16161a] p-1 rounded-xl border border-white/5 gap-1">
+            {[
+              { id: "ALL", label: "All Transactions" },
+              { id: "PENDING", label: "Pending Approvals" },
+              { id: "PENDING_RESIDENTS", label: "Pending Residents" },
+              { id: "PAID", label: "Paid" },
+              { id: "REJECTED", label: "Rejected" }
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setStatusFilter(tab.id)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wider transition-colors ${
+                  statusFilter === tab.id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-white"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Time Filter */}
+          <select
+            value={timeFilter}
+            onChange={(e) => setTimeFilter(e.target.value)}
+            className="bg-[#16161a] border border-white/5 rounded-xl px-3 py-1.5 text-xs font-semibold text-white focus:outline-none"
+          >
+            <option value="ALL_TIME">All Time</option>
+            <option value="THIS_MONTH">This Month</option>
+            <option value="THIS_YEAR">This Year</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Main Table */}
+      {isLoading ? (
+        <div className="flex items-center justify-center p-20">
+          <Loader2 className="animate-spin text-primary" size={40} />
+        </div>
+      ) : statusFilter === "PENDING_RESIDENTS" ? (
+        filteredPendingResidents.length > 0 ? (
+          <div className="glass-card rounded-3xl overflow-hidden border border-white/5 bg-[#121214]">
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse text-left">
+                <thead>
+                  <tr className="border-b border-white/5 bg-white/5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    <th className="p-6">Resident</th>
+                    <th className="p-6">Contact Info</th>
+                    <th className="p-6">Monthly Fee Status</th>
+                    <th className="p-6 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5 text-sm">
+                  {filteredPendingResidents.map((stud) => {
+                    const pendingTx = payments.find(p => p.studentId === stud.id && p.status === "PENDING");
+                    return (
+                      <tr key={stud.id} className="hover:bg-white/5 transition-colors">
+                        <td className="p-6">
+                          <div className="font-semibold text-white">{stud.fullName}</div>
+                          <div className="text-xs text-muted-foreground mt-0.5 font-medium">
+                            {stud.room ? `Room ${stud.room.roomNumber}` : 'Unassigned'}
+                          </div>
+                        </td>
+                        <td className="p-6">
+                          <div className="text-white font-medium">{stud.mobile}</div>
+                          <div className="text-xs text-muted-foreground mt-0.5">Parent: {stud.parentName} ({stud.parentContact})</div>
+                        </td>
+                        <td className="p-6">
+                          {pendingTx ? (
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-500">
+                              Verification Pending (₹{pendingTx.amount.toLocaleString("en-IN")})
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-red-500/10 text-red-500">
+                              No Upload / Submission
+                            </span>
+                          )}
+                        </td>
+                        <td className="p-6 text-right">
+                          {pendingTx ? (
+                            <button
+                              onClick={() => {
+                                setStatusFilter("PENDING");
+                                setSearchTerm(stud.fullName);
+                              }}
+                              className="px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-bold hover:bg-primary/90 transition-colors"
+                            >
+                              Review Upload
+                            </button>
+                          ) : (
+                            <a
+                              href={`https://wa.me/${stud.mobile.replace(/\D/g, '')}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 px-3 py-1.5 border border-white/10 hover:bg-white/5 rounded-lg text-xs font-bold text-white transition-colors"
+                            >
+                              Send Reminder
+                            </a>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : (
+          <div className="text-center p-16 glass-card rounded-3xl border border-white/5 bg-[#121214]">
+            <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto mb-4" />
+            <h3 className="text-lg font-bold text-white mb-2">No Pending Residents</h3>
+            <p className="text-muted-foreground max-w-sm mx-auto">All residents have paid their fees for the filtered period!</p>
+          </div>
+        )
+      ) : filteredPayments.length > 0 ? (
+        <div className="glass-card rounded-3xl overflow-hidden border border-white/5 bg-[#121214]">
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse text-left">
+              <thead>
+                <tr className="border-b border-white/5 bg-white/5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  <th className="p-6">Resident</th>
+                  <th className="p-6">UTR / Reference</th>
+                  <th className="p-6">Transaction Date</th>
+                  <th className="p-6">Amount Paid</th>
+                  <th className="p-6">Status</th>
+                  <th className="p-6 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5 text-sm">
+                {filteredPayments.map((pay) => (
+                  <tr key={pay.id} className="hover:bg-white/5 transition-colors">
+                    <td className="p-6">
+                      <div className="font-semibold text-white">{pay.student?.fullName || "Unknown Student"}</div>
+                      <div className="text-xs text-muted-foreground mt-0.5">
+                        {pay.student?.room ? `Room ${pay.student.room.roomNumber}` : 'Unassigned'}
+                      </div>
+                    </td>
+                    <td className="p-6">
+                      <code className="text-xs bg-white/5 text-white/80 px-2 py-1 rounded">{pay.utr || "N/A"}</code>
+                    </td>
+                    <td className="p-6">
+                      <div className="flex items-center gap-2 text-white">
+                        <Calendar size={14} className="text-muted-foreground" />
+                        {new Date(pay.paymentDate).toLocaleDateString("en-IN", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric"
+                        })}
+                      </div>
+                    </td>
+                    <td className="p-6">
+                      <div className="font-bold text-white">₹{pay.amount.toLocaleString("en-IN")}</div>
+                    </td>
+                    <td className="p-6">
+                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
+                        pay.status === "PAID" ? "bg-emerald-500/10 text-emerald-500" :
+                        pay.status === "REJECTED" ? "bg-red-500/10 text-red-500" :
+                        "bg-amber-500/10 text-amber-500"
+                      }`}>
+                        <CreditCard size={12} /> {pay.status}
+                      </span>
+                    </td>
+                    <td className="p-6 text-right space-x-2">
+                      {pay.receiptUrl && (
+                        <button
+                          onClick={() => setViewScreenshotUrl(pay.receiptUrl)}
+                          className="p-2 hover:bg-white/5 rounded-lg text-primary hover:text-primary-foreground transition-colors inline-flex items-center gap-1 text-xs"
+                          title="View Screenshot"
+                        >
+                          <Eye size={16} /> Screenshot
+                        </button>
+                      )}
+                      {pay.status === "PENDING" && (
+                        <>
+                          <button
+                            onClick={() => handleApprove(pay.id)}
+                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition-colors"
+                          >
+                            Approve
+                          </button>
+                          <button
+                            onClick={() => handleReject(pay.id)}
+                            className="px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white rounded-lg text-xs font-bold transition-colors"
+                          >
+                            Reject
+                          </button>
+                        </>
+                      )}
+                      <button 
+                        onClick={() => handleDelete(pay.id)}
+                        className="p-2 hover:bg-white/5 rounded-lg text-muted-foreground hover:text-red-500 transition-colors inline-block"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : (
+        <div className="text-center p-16 glass-card rounded-3xl border border-white/5 bg-[#121214]">
+          <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto mb-4" />
+          <h3 className="text-lg font-bold text-white mb-2">No Transactions Found</h3>
+          <p className="text-muted-foreground max-w-sm mx-auto mb-6">No payment transactions match the active search and filter criteria.</p>
+        </div>
+      )}
+
+      {/* Record Fee Payment Modal */}
+      <AnimatePresence>
+        {isModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-md bg-[#121214] border border-white/5 rounded-3xl overflow-hidden shadow-2xl p-8"
+            >
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-bold text-white">Record Fee Transaction</h3>
+                <button onClick={() => setIsModalOpen(false)} className="text-muted-foreground hover:text-white transition-colors">
+                  <X size={20} />
+                </button>
+              </div>
+
+              {error && (
+                <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-sm">
+                  {error}
+                </div>
+              )}
+
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-muted-foreground">Select Resident</label>
+                  <select 
+                    required
+                    value={formData.studentId}
+                    onChange={(e) => setFormData({...formData, studentId: e.target.value})}
+                    className="w-full bg-[#16161a] border border-white/5 rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-1 focus:ring-primary/50"
+                  >
+                    <option value="">Choose resident...</option>
+                    {students.map(stud => (
+                      <option key={stud.id} value={stud.id}>
+                        {stud.fullName} ({stud.room ? `Room ${stud.room.roomNumber}` : 'Unassigned'})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-muted-foreground">Amount Paid (₹)</label>
+                  <input 
+                    type="number" 
+                    required
+                    min={1}
+                    value={formData.amount}
+                    onChange={(e) => setFormData({...formData, amount: e.target.value})}
+                    className="w-full bg-[#16161a] border border-white/5 rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-1 focus:ring-primary/50"
+                    placeholder="e.g. 15000"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-muted-foreground">UTR / Transaction ID (Optional)</label>
+                  <input 
+                    type="text"
+                    value={formData.utr}
+                    onChange={(e) => setFormData({...formData, utr: e.target.value})}
+                    className="w-full bg-[#16161a] border border-white/5 rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-1 focus:ring-primary/50"
+                    placeholder="e.g. 123456789012"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-muted-foreground">Payment Status</label>
+                  <select 
+                    value={formData.status}
+                    onChange={(e) => setFormData({...formData, status: e.target.value})}
+                    className="w-full bg-[#16161a] border border-white/5 rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-1 focus:ring-primary/50"
+                  >
+                    <option value="PAID">Paid</option>
+                    <option value="PARTIAL">Partial Payment</option>
+                    <option value="PENDING">Pending / Due</option>
+                  </select>
+                </div>
+
+                <div className="flex justify-end gap-4 mt-8">
+                  <button 
+                    type="button"
+                    onClick={() => setIsModalOpen(false)}
+                    className="px-5 py-3 rounded-xl border border-white/5 bg-[#16161a] hover:bg-white/5 transition-colors text-white font-semibold text-sm"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="px-5 py-3 rounded-xl bg-primary hover:bg-primary/90 transition-all text-primary-foreground font-semibold text-sm flex items-center gap-2"
+                  >
+                    {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : "Record Payment"}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* View Screenshot Modal */}
+      <AnimatePresence>
+        {viewScreenshotUrl && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
+            <div className="relative max-w-3xl w-full max-h-[85vh] bg-[#121214] border border-white/10 rounded-3xl overflow-hidden p-6 flex flex-col items-center">
+              <button 
+                onClick={() => setViewScreenshotUrl(null)}
+                className="absolute top-4 right-4 p-2 bg-black/50 text-white hover:text-primary rounded-full transition-colors z-10"
+              >
+                <X size={24} />
+              </button>
+              <h4 className="text-lg font-bold text-white mb-4">Payment Screenshot</h4>
+              <div className="flex-1 w-full overflow-auto flex items-center justify-center">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img 
+                  src={viewScreenshotUrl} 
+                  alt="Receipt Screenshot" 
+                  className="max-w-full max-h-[60vh] object-contain rounded-xl"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}

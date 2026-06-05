@@ -1,0 +1,225 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  STUDENT
+}
+
+enum FeeStatus {
+  PAID
+  PARTIAL
+  PENDING
+  REJECTED
+}
+
+enum ComplaintStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum VacationStatus {
+  IN_HOSTEL
+  ON_VACATION
+  RETURNED
+}
+
+enum RoomType {
+  TWO_SHARING
+  THREE_SHARING
+  FIVE_SHARING
+}
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  password      String
+  role          Role     @default(STUDENT)
+  profileImage  String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  studentProfile StudentProfile?
+  posts          Post[]
+  notifications  Notification[]
+  activityLogs   ActivityLog[]
+}
+
+model StudentProfile {
+  id            String   @id @default(uuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id])
+  fullName      String
+  photo         String?
+  mobile        String
+  collegeName   String
+  course        String
+  parentName    String
+  parentContact String
+  address       String
+  admissionDate DateTime @default(now())
+  roomId        String?
+  room          Room?    @relation(fields: [roomId], references: [id])
+  feeStatus     FeeStatus @default(PENDING)
+  
+  aadhaarUrl    String?
+  collegeIdUrl  String?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  feePayments   FeePayment[]
+  complaints    Complaint[]
+  votes         ComplaintVote[]
+  comments      ComplaintComment[]
+  vacations     VacationRequest[]
+  leaveRequests LeaveRequest[]
+}
+
+model Room {
+  id               String   @id @default(uuid())
+  roomNumber       String   @unique
+  capacity         Int
+  currentOccupancy Int      @default(0)
+  type             RoomType
+  students         StudentProfile[]
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model FeePayment {
+  id          String   @id @default(uuid())
+  studentId   String
+  student     StudentProfile @relation(fields: [studentId], references: [id])
+  amount      Float
+  status      FeeStatus
+  paymentDate DateTime @default(now())
+  receiptUrl  String?
+  utr         String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Complaint {
+  id          String   @id @default(uuid())
+  studentId   String
+  student     StudentProfile @relation(fields: [studentId], references: [id])
+  title       String
+  description String
+  image       String?
+  status      ComplaintStatus @default(OPEN)
+  votesCount  Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  votes       ComplaintVote[]
+  comments    ComplaintComment[]
+}
+
+model ComplaintVote {
+  id          String   @id @default(uuid())
+  complaintId String
+  complaint   Complaint @relation(fields: [complaintId], references: [id])
+  studentId   String
+  student     StudentProfile @relation(fields: [studentId], references: [id])
+  type        Boolean  // true for agree, false for disagree
+  createdAt   DateTime @default(now())
+  
+  @@unique([complaintId, studentId])
+}
+
+model ComplaintComment {
+  id          String   @id @default(uuid())
+  complaintId String
+  complaint   Complaint @relation(fields: [complaintId], references: [id])
+  studentId   String
+  student     StudentProfile @relation(fields: [studentId], references: [id])
+  text        String
+  createdAt   DateTime @default(now())
+}
+
+model GalleryAlbum {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  media       GalleryMedia[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model GalleryMedia {
+  id          String   @id @default(uuid())
+  albumId     String
+  album       GalleryAlbum @relation(fields: [albumId], references: [id])
+  url         String
+  type        String   // "IMAGE" or "VIDEO"
+  createdAt   DateTime @default(now())
+}
+
+model Post {
+  id          String   @id @default(uuid())
+  type        String   // "BLOG" or "NOTICE"
+  title       String
+  content     String
+  media       String?
+  authorId    String
+  author      User     @relation(fields: [authorId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model VacationRequest {
+  id             String   @id @default(uuid())
+  studentId      String
+  student        StudentProfile @relation(fields: [studentId], references: [id])
+  reason         String
+  departureDate  DateTime
+  returnDate     DateTime?
+  status         VacationStatus @default(ON_VACATION)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Notification {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  title       String
+  message     String
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+}
+
+model ActivityLog {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  action      String
+  details     String?
+  createdAt   DateTime @default(now())
+}
+
+model LeaveRequest {
+  id          String         @id @default(uuid())
+  studentId   String
+  student     StudentProfile @relation(fields: [studentId], references: [id])
+  imageUrl    String
+  status      String         @default("PENDING") // PENDING, APPROVED, REJECTED
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+model Rule {
+  id        String   @id @default(uuid())
+  title     String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

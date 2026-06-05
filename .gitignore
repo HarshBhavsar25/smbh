@@ -25,3 +25,14 @@ out/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Typescript compilation output
+*.js.map
+*.d.ts
+**/*.js.map
+**/*.d.ts
+*.tsbuildinfo
+**/*.tsbuildinfo
+backend/prisma.config.js
+backend/prisma.config.d.ts
+backend/prisma.config.js.map

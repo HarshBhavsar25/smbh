@@ -15,6 +15,7 @@ import { GalleryModule } from './gallery/gallery.module';
 import { IntegrationsModule } from './integrations/integrations.module';
 import { RulesController } from './rules/rules.controller';
 import { LeaveRequestsController } from './leaves/leaves.controller';
+import { CloudinaryModule } from './cloudinary/cloudinary.module';
 
 @Module({
   imports: [
@@ -29,7 +30,8 @@ import { LeaveRequestsController } from './leaves/leaves.controller';
     VacationsModule, 
     PostsModule, 
     GalleryModule, 
-    IntegrationsModule
+    IntegrationsModule,
+    CloudinaryModule
   ],
   controllers: [AppController, RulesController, LeaveRequestsController],
   providers: [AppService],

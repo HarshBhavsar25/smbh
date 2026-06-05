@@ -2,37 +2,24 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, UseInterc
 import { FileInterceptor } from '@nestjs/platform-express';
 import { FeesService } from './fees.service';
 import { AuthGuard } from '@nestjs/passport';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
-import * as fs from 'fs';
-
-const storage = diskStorage({
-  destination: (req, file, cb) => {
-    const dir = './uploads/payment_ss';
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    cb(null, dir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, `${uniqueSuffix}${extname(file.originalname)}`);
-  },
-});
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 
 @UseGuards(AuthGuard('jwt'))
 @Controller('fees')
 export class FeesController {
-  constructor(private readonly feesService: FeesService) {}
+  constructor(
+    private readonly feesService: FeesService,
+    private readonly cloudinaryService: CloudinaryService
+  ) {}
 
   @Post('upload')
-  @UseInterceptors(FileInterceptor('file', { storage }))
-  async uploadFile(@UploadedFile() file: any) {
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadFile(@UploadedFile() file: Express.Multer.File) {
     if (!file) {
       throw new Error('No file uploaded');
     }
-    const fileUrl = `http://localhost:3001/uploads/payment_ss/${file.filename}`;
-    return { url: fileUrl };
+    const secureUrl = await this.cloudinaryService.uploadFile(file, 'payment_ss');
+    return { url: secureUrl };
   }
 
   @Post()

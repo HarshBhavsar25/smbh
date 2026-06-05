@@ -1,20 +1,14 @@
 import { Controller, Get, Post, Delete, Body, Param, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { GalleryService } from './gallery.service';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
-
-const storage = diskStorage({
-  destination: './uploads',
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, `${uniqueSuffix}${extname(file.originalname)}`);
-  },
-});
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 
 @Controller('gallery')
 export class GalleryController {
-  constructor(private readonly galleryService: GalleryService) {}
+  constructor(
+    private readonly galleryService: GalleryService,
+    private readonly cloudinaryService: CloudinaryService
+  ) {}
 
   @Get()
   async getAllImages() {
@@ -27,20 +21,19 @@ export class GalleryController {
   }
 
   @Post('upload')
-  @UseInterceptors(FileInterceptor('file', { storage }))
-  async uploadFile(@UploadedFile() file: any) {
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadFile(@UploadedFile() file: Express.Multer.File) {
     if (!file) {
       throw new Error('No file uploaded');
     }
     
-    const fileUrl = `http://localhost:3001/uploads/${file.filename}`;
+    const secureUrl = await this.cloudinaryService.uploadFile(file, 'gallery');
     
-    // Detect type based on mime type or file extension
-    const isVideo = file.mimetype.startsWith('video/') || 
-                    ['.mp4', '.mov', '.avi', '.mkv', '.webm'].includes(extname(file.originalname).toLowerCase());
+    // Detect type based on mime type
+    const isVideo = file.mimetype.startsWith('video/');
     const type = isVideo ? 'VIDEO' : 'IMAGE';
 
-    return this.galleryService.create(fileUrl, type);
+    return this.galleryService.create(secureUrl, type);
   }
 
   @Delete(':id')

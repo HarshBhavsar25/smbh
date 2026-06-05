@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as admin from 'firebase-admin';
 import * as nodemailer from 'nodemailer';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 
 @Injectable()
 export class IntegrationsService {
@@ -10,7 +11,7 @@ export class IntegrationsService {
   private readonly uploadDir = path.join(process.cwd(), 'uploads');
   private transporter: nodemailer.Transporter;
 
-  constructor() {
+  constructor(private readonly cloudinaryService: CloudinaryService) {
     // 1. Ensure the uploads directory exists
     if (!fs.existsSync(this.uploadDir)) {
       fs.mkdirSync(this.uploadDir, { recursive: true });
@@ -46,18 +47,10 @@ export class IntegrationsService {
     });
   }
 
-  // Local File Storage (Images & Videos)
+  // Cloudinary File Storage (Images & Videos)
   async uploadFile(file: Express.Multer.File): Promise<string> {
-    this.logger.log(`Saving file locally: ${file.originalname}`);
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const filename = `${uniqueSuffix}-${file.originalname}`;
-    const filePath = path.join(this.uploadDir, filename);
-    
-    // In a real app, 'file.buffer' is provided by Multer
-    fs.writeFileSync(filePath, file.buffer);
-    
-    // Return the relative URL so it can be served statically by NestJS later
-    return `/uploads/${filename}`;
+    this.logger.log(`Uploading file to Cloudinary: ${file.originalname}`);
+    return this.cloudinaryService.uploadFile(file, 'integrations');
   }
 
   // Nodemailer Implementation

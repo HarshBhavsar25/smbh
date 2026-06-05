@@ -2,28 +2,15 @@ import { Controller, Post, Patch, Body, UseGuards, UseInterceptors, UploadedFile
 import { FileInterceptor } from '@nestjs/platform-express';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthGuard } from '@nestjs/passport';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
-import * as fs from 'fs';
-
-const storage = diskStorage({
-  destination: (req, file, cb) => {
-    const dir = './uploads/profiles';
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    cb(null, dir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, `${uniqueSuffix}${extname(file.originalname)}`);
-  },
-});
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 
 @UseGuards(AuthGuard('jwt'))
 @Controller('users')
 export class UsersController {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private cloudinaryService: CloudinaryService
+  ) {}
 
   @Get('me')
   async getMe(@Request() req: any) {
@@ -35,13 +22,13 @@ export class UsersController {
   }
 
   @Post('upload-profile')
-  @UseInterceptors(FileInterceptor('file', { storage }))
-  async uploadProfileImage(@UploadedFile() file: any) {
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadProfileImage(@UploadedFile() file: Express.Multer.File) {
     if (!file) {
       throw new Error('No file uploaded');
     }
-    const fileUrl = `http://localhost:3001/uploads/profiles/${file.filename}`;
-    return { url: fileUrl };
+    const secureUrl = await this.cloudinaryService.uploadFile(file, 'profiles');
+    return { url: secureUrl };
   }
 
   @Patch('me/profile-image')

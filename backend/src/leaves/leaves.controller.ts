@@ -2,37 +2,24 @@ import { Controller, Get, Post, Patch, Param, Body, UseGuards, UseInterceptors, 
 import { FileInterceptor } from '@nestjs/platform-express';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthGuard } from '@nestjs/passport';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
-import * as fs from 'fs';
-
-const storage = diskStorage({
-  destination: (req, file, cb) => {
-    const dir = './uploads/leave_forms';
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    cb(null, dir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, `${uniqueSuffix}${extname(file.originalname)}`);
-  },
-});
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 
 @UseGuards(AuthGuard('jwt'))
 @Controller('leave-requests')
 export class LeaveRequestsController {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private cloudinaryService: CloudinaryService
+  ) {}
 
   @Post('upload')
-  @UseInterceptors(FileInterceptor('file', { storage }))
-  async uploadFile(@UploadedFile() file: any) {
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadFile(@UploadedFile() file: Express.Multer.File) {
     if (!file) {
       throw new Error('No file uploaded');
     }
-    const fileUrl = `http://localhost:3001/uploads/leave_forms/${file.filename}`;
-    return { url: fileUrl };
+    const secureUrl = await this.cloudinaryService.uploadFile(file, 'leave_forms');
+    return { url: secureUrl };
   }
 
   @Post()

@@ -5,7 +5,14 @@ import { join } from 'path';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  app.enableCors();
+  app.enableCors({
+    origin: [
+      'https://shreemauliboyshostel.com',
+      'https://www.shreemauliboyshostel.com',
+      'http://localhost:3000',
+    ],
+    credentials: true,
+  });
   app.use('/uploads', express.static(join(process.cwd(), 'uploads')));
   await app.listen(process.env.PORT ?? 3001);
 }

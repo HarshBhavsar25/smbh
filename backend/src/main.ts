@@ -13,6 +13,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.enableCors({
     origin: [
+      'https://shreemauliboyshostel.vercel.app',
       'https://shreemauliboyshostel.com',
       'https://www.shreemauliboyshostel.com',
       'http://localhost:3000',

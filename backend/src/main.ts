@@ -1,3 +1,9 @@
+// Polyfill crypto for Node.js < 19 (Railway uses Node 18)
+import { webcrypto } from 'crypto';
+if (!globalThis.crypto) {
+  (globalThis as any).crypto = webcrypto;
+}
+
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import * as express from 'express';
@@ -10,7 +16,8 @@ async function bootstrap() {
       'https://shreemauliboyshostel.com',
       'https://www.shreemauliboyshostel.com',
       'http://localhost:3000',
-    ],
+      process.env.FRONTEND_URL,
+    ].filter(Boolean),
     credentials: true,
   });
   app.use('/uploads', express.static(join(process.cwd(), 'uploads')));

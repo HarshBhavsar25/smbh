@@ -39,6 +39,14 @@ export class UsersController {
     });
   }
 
+  @Patch('me/fcm-token')
+  async updateFcmToken(@Request() req: any, @Body() body: { fcmToken: string }) {
+    return this.prisma.user.update({
+      where: { id: req.user.userId },
+      data: { fcmToken: body.fcmToken },
+    });
+  }
+
   @Patch('students/:id/profile-image')
   async updateStudentProfileImage(@Param('id') id: string, @Body() body: { imageUrl: string }) {
     return this.prisma.studentProfile.update({

@@ -27,6 +27,9 @@ export default function FeesAdminPage() {
     utr: ""
   });
 
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [dropdownSearch, setDropdownSearch] = useState("");
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -63,6 +66,8 @@ export default function FeesAdminPage() {
       utr: ""
     });
     setError("");
+    setIsDropdownOpen(false);
+    setDropdownSearch("");
     setIsModalOpen(true);
   };
 
@@ -458,9 +463,9 @@ export default function FeesAdminPage() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-md bg-[#121214] border border-white/5 rounded-3xl overflow-hidden shadow-2xl p-8"
+              className="w-full max-w-md bg-[#121214] border border-white/5 rounded-3xl overflow-hidden shadow-2xl p-6 md:p-8 max-h-[90vh] flex flex-col"
             >
-              <div className="flex justify-between items-center mb-6">
+              <div className="flex justify-between items-center mb-4 flex-shrink-0">
                 <h3 className="text-xl font-bold text-white">Record Fee Transaction</h3>
                 <button onClick={() => setIsModalOpen(false)} className="text-muted-foreground hover:text-white transition-colors">
                   <X size={20} />
@@ -468,27 +473,78 @@ export default function FeesAdminPage() {
               </div>
 
               {error && (
-                <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-sm">
+                <div className="mb-4 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-sm flex-shrink-0">
                   {error}
                 </div>
               )}
 
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="space-y-2">
+              <form onSubmit={handleSubmit} className="space-y-5 overflow-y-auto flex-1 pr-1 -mr-1">
+                <div className="space-y-2 relative">
                   <label className="text-sm font-medium text-muted-foreground">Select Resident</label>
-                  <select 
-                    required
-                    value={formData.studentId}
-                    onChange={(e) => setFormData({...formData, studentId: e.target.value})}
-                    className="w-full bg-[#16161a] border border-white/5 rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-1 focus:ring-primary/50"
-                  >
-                    <option value="">Choose resident...</option>
-                    {students.map(stud => (
-                      <option key={stud.id} value={stud.id}>
-                        {stud.fullName} ({stud.room ? `Room ${stud.room.roomNumber}` : 'Unassigned'})
-                      </option>
-                    ))}
-                  </select>
+                  
+                  {/* Searchable Custom Dropdown */}
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                      className="w-full bg-[#16161a] border border-white/5 rounded-xl py-3 px-4 text-left text-white flex justify-between items-center focus:outline-none focus:ring-1 focus:ring-primary/50"
+                    >
+                      <span className="truncate">
+                        {formData.studentId
+                          ? students.find(s => s.id === formData.studentId)
+                            ? `${students.find(s => s.id === formData.studentId).fullName} (${students.find(s => s.id === formData.studentId).room ? `Room ${students.find(s => s.id === formData.studentId).room.roomNumber}` : 'Unassigned'})`
+                            : 'Choose resident...'
+                          : 'Choose resident...'}
+                      </span>
+                      <span className="text-muted-foreground">↓</span>
+                    </button>
+
+                    {isDropdownOpen && (
+                      <div className="absolute z-50 w-full mt-2 bg-[#16161a] border border-white/5 rounded-xl shadow-2xl p-2 space-y-2 max-h-60 flex flex-col">
+                        <input
+                          type="text"
+                          value={dropdownSearch}
+                          onChange={(e) => setDropdownSearch(e.target.value)}
+                          placeholder="Search resident by name..."
+                          className="w-full bg-[#121214] border border-white/5 rounded-lg py-2 px-3 text-sm text-white placeholder-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50 flex-shrink-0"
+                          autoFocus
+                        />
+                        <div className="overflow-y-auto flex-1 space-y-1">
+                          {students.filter(stud => 
+                            stud.fullName.toLowerCase().includes(dropdownSearch.toLowerCase())
+                          ).length === 0 ? (
+                            <div className="text-sm text-muted-foreground p-3 text-center">No residents found</div>
+                          ) : (
+                            students
+                              .filter(stud => 
+                                stud.fullName.toLowerCase().includes(dropdownSearch.toLowerCase())
+                              )
+                              .map(stud => (
+                                <button
+                                  key={stud.id}
+                                  type="button"
+                                  onClick={() => {
+                                    setFormData({ ...formData, studentId: stud.id });
+                                    setIsDropdownOpen(false);
+                                    setDropdownSearch("");
+                                  }}
+                                  className={`w-full text-left p-2.5 rounded-lg text-sm transition-colors flex justify-between items-center ${
+                                    formData.studentId === stud.id
+                                      ? 'bg-primary text-primary-foreground font-medium'
+                                      : 'text-white hover:bg-white/5'
+                                  }`}
+                                >
+                                  <span className="font-medium">{stud.fullName}</span>
+                                  <span className={formData.studentId === stud.id ? 'text-primary-foreground/80' : 'text-xs text-muted-foreground'}>
+                                    {stud.room ? `Room ${stud.room.roomNumber}` : 'Unassigned'}
+                                  </span>
+                                </button>
+                              ))
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -528,7 +584,7 @@ export default function FeesAdminPage() {
                   </select>
                 </div>
 
-                <div className="flex justify-end gap-4 mt-8">
+                <div className="flex justify-end gap-4 pt-4 mt-6 border-t border-white/5 flex-shrink-0">
                   <button 
                     type="button"
                     onClick={() => setIsModalOpen(false)}

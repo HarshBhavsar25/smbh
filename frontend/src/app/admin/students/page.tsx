@@ -294,23 +294,23 @@ export default function StudentsAdminPage() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-2xl bg-[#121214] border border-white/5 rounded-3xl overflow-hidden shadow-2xl p-8"
+              className="w-full max-w-2xl bg-[#121214] border border-white/5 rounded-3xl overflow-hidden shadow-2xl p-6 md:p-8 max-h-[90vh] flex flex-col"
             >
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-2xl font-bold text-white">Add New Student</h3>
+              <div className="flex justify-between items-center mb-4 flex-shrink-0">
+                <h3 className="text-xl md:text-2xl font-bold text-white">Add New Student</h3>
                 <button onClick={() => setIsAddModalOpen(false)} className="text-muted-foreground hover:text-white transition-colors">
                   <X size={20} />
                 </button>
               </div>
 
               {error && (
-                <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-sm">
+                <div className="mb-4 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-sm flex-shrink-0">
                   {error}
                 </div>
               )}
 
-              <form onSubmit={handleAddStudent} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <form onSubmit={handleAddStudent} className="space-y-5 overflow-y-auto flex-1 pr-1 -mr-1">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-muted-foreground">Full Name</label>
                     <input 
@@ -399,7 +399,7 @@ export default function StudentsAdminPage() {
                       placeholder="+91 98765 43211"
                     />
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-2 md:col-span-2">
                     <label className="text-sm font-medium text-muted-foreground">Home Address</label>
                     <input 
                       type="text" 
@@ -412,7 +412,7 @@ export default function StudentsAdminPage() {
                   </div>
                 </div>
 
-                <div className="flex justify-end gap-4 mt-8">
+                <div className="flex justify-end gap-4 pt-4 mt-6 border-t border-white/5 flex-shrink-0">
                   <button 
                     type="button"
                     onClick={() => setIsAddModalOpen(false)}
@@ -442,9 +442,9 @@ export default function StudentsAdminPage() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-md bg-[#121214] border border-white/5 rounded-3xl overflow-hidden shadow-2xl p-8"
+              className="w-full max-w-md bg-[#121214] border border-white/5 rounded-3xl overflow-hidden shadow-2xl p-6 md:p-8 max-h-[90vh] flex flex-col"
             >
-              <div className="flex justify-between items-center mb-6">
+              <div className="flex justify-between items-center mb-4 flex-shrink-0">
                 <h3 className="text-xl font-bold text-white">Assign Room</h3>
                 <button onClick={() => setIsAssignModalOpen(false)} className="text-muted-foreground hover:text-white transition-colors">
                   <X size={20} />
@@ -452,12 +452,12 @@ export default function StudentsAdminPage() {
               </div>
 
               {error && (
-                <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-sm">
+                <div className="mb-4 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-sm flex-shrink-0">
                   {error}
                 </div>
               )}
 
-              <form onSubmit={handleAssignRoom} className="space-y-6">
+              <form onSubmit={handleAssignRoom} className="space-y-5 overflow-y-auto flex-1 pr-1 -mr-1">
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-muted-foreground">Select Room for {selectedStudent.fullName}</label>
                   <select 
@@ -481,7 +481,7 @@ export default function StudentsAdminPage() {
                   </select>
                 </div>
 
-                <div className="flex justify-end gap-4 mt-8">
+                <div className="flex justify-end gap-4 pt-4 mt-6 border-t border-white/5 flex-shrink-0">
                   <button 
                     type="button"
                     onClick={() => setIsAssignModalOpen(false)}

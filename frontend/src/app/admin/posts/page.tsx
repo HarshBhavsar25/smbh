@@ -108,15 +108,15 @@ export default function PostsPage() {
           <p className="text-muted-foreground text-sm">Create and view official notices, warnings, and event announcements for all residents.</p>
         </div>
         
-        <div className="flex gap-4">
-          <div className="relative">
+        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+          <div className="relative w-full sm:w-auto">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
             <input 
               type="text" 
               placeholder="Search announcements..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-[#16161a] border border-white/5 focus:border-primary/50 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white placeholder:text-muted-foreground w-[250px] transition-all outline-none"
+              className="bg-[#16161a] border border-white/5 focus:border-primary/50 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white placeholder:text-muted-foreground w-full sm:w-[250px] transition-all outline-none"
             />
           </div>
           <button 
@@ -124,7 +124,7 @@ export default function PostsPage() {
               setError("");
               setIsModalOpen(true);
             }}
-            className="px-5 py-2.5 bg-primary text-primary-foreground rounded-xl font-medium text-sm flex items-center gap-2 hover:bg-primary/90 transition-all"
+            className="px-5 py-2.5 bg-primary text-primary-foreground rounded-xl font-medium text-sm flex items-center justify-center gap-2 hover:bg-primary/90 transition-all w-full sm:w-auto"
           >
             <Plus size={16} /> Create Announcement
           </button>

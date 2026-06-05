@@ -98,6 +98,30 @@ export class IntegrationsService {
     }
   }
 
+  async sendMulticastNotification(tokens: string[], title: string, body: string) {
+    try {
+      if (!admin.apps.length) {
+        this.logger.warn('Firebase not initialized, skipping multicast notification.');
+        return { success: false };
+      }
+      if (!tokens || tokens.length === 0) {
+        return { success: true };
+      }
+      
+      const message = {
+        notification: { title, body },
+        tokens: tokens,
+      };
+      
+      const response = await admin.messaging().sendEachForMulticast(message);
+      this.logger.log(`Successfully sent multicast FCM: ${response.successCount} successes, ${response.failureCount} failures`);
+      return { success: true, response };
+    } catch (error) {
+      this.logger.error(`Error sending multicast FCM message: ${error.message}`);
+      return { success: false, error: error.message };
+    }
+  }
+
   // WhatsApp Link Generation
   generateWhatsAppLink(phone: string, message: string): string {
     const encodedMessage = encodeURIComponent(message);

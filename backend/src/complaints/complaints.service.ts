@@ -1,12 +1,27 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class ComplaintsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notificationsService: NotificationsService,
+  ) {}
 
   async create(data: any) {
-    return this.prisma.complaint.create({ data });
+    const complaint = await this.prisma.complaint.create({ 
+      data,
+      include: { student: true }
+    });
+
+    // Notify all admins about the new complaint
+    await this.notificationsService.notifyAllAdmins(
+      `New Complaint: ${complaint.title}`,
+      `Submitted by ${complaint.student?.fullName || 'a student'}`
+    );
+
+    return complaint;
   }
 
   async findAll() {
@@ -34,16 +49,54 @@ export class ComplaintsService {
   }
 
   async update(id: string, data: any) {
-    return this.prisma.complaint.update({
+    const complaint = await this.prisma.complaint.update({
       where: { id },
       data,
+      include: { student: true }
     });
+
+    // Notify the student about the status update
+    if (data.status && complaint.student?.userId) {
+      await this.notificationsService.notifyUser(
+        complaint.student.userId,
+        `Complaint Status Updated: ${complaint.title}`,
+        `The status of your complaint has been changed to ${data.status}`
+      );
+    }
+
+    return complaint;
   }
 
   async addComment(complaintId: string, studentId: string, text: string) {
-    return this.prisma.complaintComment.create({
+    const comment = await this.prisma.complaintComment.create({
       data: { complaintId, studentId, text },
+      include: { 
+        student: true,
+        complaint: { include: { student: true } }
+      }
     });
+
+    const complaint = comment.complaint;
+    const commenterName = comment.student?.fullName || 'A resident';
+
+    if (complaint) {
+      // 1. Notify the complaint owner (student) if the commenter is someone else
+      if (complaint.studentId !== studentId && complaint.student?.userId) {
+        await this.notificationsService.notifyUser(
+          complaint.student.userId,
+          `New Comment on: ${complaint.title}`,
+          `${commenterName}: "${text}"`
+        );
+      }
+      
+      // 2. Notify all admins about the new comment
+      await this.notificationsService.notifyAllAdmins(
+        `Comment on Complaint: ${complaint.title}`,
+        `${commenterName}: "${text}"`
+      );
+    }
+
+    return comment;
   }
 
   async vote(complaintId: string, studentId: string, type: boolean) {

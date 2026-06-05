@@ -16,6 +16,7 @@ import { IntegrationsModule } from './integrations/integrations.module';
 import { RulesController } from './rules/rules.controller';
 import { LeaveRequestsController } from './leaves/leaves.controller';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -31,7 +32,8 @@ import { CloudinaryModule } from './cloudinary/cloudinary.module';
     PostsModule, 
     GalleryModule, 
     IntegrationsModule,
-    CloudinaryModule
+    CloudinaryModule,
+    NotificationsModule
   ],
   controllers: [AppController, RulesController, LeaveRequestsController],
   providers: [AppService],

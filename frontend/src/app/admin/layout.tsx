@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -9,8 +9,10 @@ import {
   LayoutDashboard, Users, DoorClosed, 
   CreditCard, MessageSquare, Image as ImageIcon, 
   Settings, LogOut, Bell, Search, Plane, FileText, UserMinus,
-  Menu, X
+  Menu, X, CheckCheck, AlertCircle, Megaphone
 } from "lucide-react";
+
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -18,20 +20,69 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  // Notification state
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const notifRef = useRef<HTMLDivElement>(null);
+  const unreadCount = notifications.filter(n => !n.isRead).length;
+
   useEffect(() => {
     const token = localStorage.getItem("token");
-    if (token) {
-      fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/users/me`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
+    if (!token) return;
+
+    // Fetch profile
+    fetch(`${API}/users/me`, { headers: { Authorization: `Bearer ${token}` } })
       .then(res => res.json())
-      .then(data => {
-        if (data && data.profileImage) {
-          setProfileImage(data.profileImage);
-        }
-      })
+      .then(data => { if (data?.profileImage) setProfileImage(data.profileImage); })
       .catch(console.error);
+
+    // Fetch notifications
+    fetchNotifications(token);
+    const interval = setInterval(() => fetchNotifications(token), 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const fetchNotifications = async (token: string) => {
+    try {
+      const res = await fetch(`${API}/notifications`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (Array.isArray(data)) setNotifications(data);
+    } catch (err) {
+      console.error("Error fetching notifications:", err);
     }
+  };
+
+  const markAllRead = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+    await fetch(`${API}/notifications/read-all`, {
+      method: "PATCH",
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+  };
+
+  const markOneRead = async (id: string) => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+    await fetch(`${API}/notifications/${id}/read`, {
+      method: "PATCH",
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
+  };
+
+  // Close notif dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
+        setIsNotifOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const navItems = [
@@ -105,10 +156,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
               <div className="p-4 border-t border-white/5 space-y-2">
                 <button 
-                  onClick={() => {
-                    setIsMobileMenuOpen(false);
-                    router.push("/admin/students");
-                  }}
+                  onClick={() => { setIsMobileMenuOpen(false); router.push("/admin/students"); }}
                   className="w-full px-4 py-3 bg-gradient-to-r from-primary to-secondary rounded-xl text-white font-medium text-sm flex items-center gap-3 shadow-lg shadow-primary/20 hover:opacity-90 transition-opacity"
                 >
                    <Plane size={18} /> Register Resident
@@ -200,7 +248,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <h2 className="text-xl font-bold text-white hidden md:block">Overview</h2>
           </div>
           
-          <div className="flex-1 md:ml-8 max-w-xl px-2">
+          <div className="flex-1 md:ml-8 max-w-xl px-2 hidden md:block">
             <div className="relative group">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" size={18} />
               <input 
@@ -212,10 +260,108 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
 
           <div className="flex items-center gap-2 md:gap-4 shrink-0">
-            <button className="relative p-2 text-muted-foreground hover:text-white transition-colors rounded-full hover:bg-white/5">
-              <Bell size={18} />
-              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-destructive rounded-full border border-background"></span>
-            </button>
+            {/* Notification Bell Dropdown */}
+            <div className="relative" ref={notifRef}>
+              <button
+                onClick={() => setIsNotifOpen(!isNotifOpen)}
+                className="relative p-2 text-muted-foreground hover:text-white transition-colors rounded-full hover:bg-white/5"
+              >
+                <Bell size={18} />
+                {unreadCount > 0 && (
+                  <span className="absolute top-1 right-1 min-w-[16px] h-4 bg-destructive rounded-full border border-background flex items-center justify-center text-[9px] font-bold text-white px-0.5">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </button>
+
+              <AnimatePresence>
+                {isNotifOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute right-0 top-full mt-3 w-[340px] sm:w-[380px] bg-[#121214] border border-white/8 rounded-2xl shadow-2xl shadow-black/60 z-50 overflow-hidden"
+                  >
+                    {/* Header */}
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-white/5">
+                      <div className="flex items-center gap-2">
+                        <Bell size={15} className="text-primary" />
+                        <span className="font-semibold text-sm text-white">Notifications</span>
+                        {unreadCount > 0 && (
+                          <span className="px-2 py-0.5 bg-primary/15 text-primary text-[10px] font-bold rounded-full">
+                            {unreadCount} new
+                          </span>
+                        )}
+                      </div>
+                      {unreadCount > 0 && (
+                        <button
+                          onClick={markAllRead}
+                          className="text-xs text-muted-foreground hover:text-primary transition-colors flex items-center gap-1"
+                        >
+                          <CheckCheck size={12} /> Mark all read
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Notification list */}
+                    <div className="max-h-[400px] overflow-y-auto">
+                      {notifications.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-12 gap-3">
+                          <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center">
+                            <Bell size={20} className="text-muted-foreground" />
+                          </div>
+                          <p className="text-sm text-muted-foreground">No notifications yet</p>
+                        </div>
+                      ) : (
+                        notifications.map((notif) => (
+                          <button
+                            key={notif.id}
+                            onClick={() => markOneRead(notif.id)}
+                            className={`w-full text-left px-4 py-3.5 border-b border-white/[0.03] hover:bg-white/[0.03] transition-colors group ${!notif.isRead ? 'bg-primary/[0.04]' : ''}`}
+                          >
+                            <div className="flex gap-3 items-start">
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
+                                notif.title?.includes('URGENT') || notif.title?.includes('Complaint')
+                                  ? 'bg-red-500/10 text-red-400'
+                                  : 'bg-primary/10 text-primary'
+                              }`}>
+                                {notif.title?.includes('Complaint') ? (
+                                  <AlertCircle size={14} />
+                                ) : (
+                                  <Megaphone size={14} />
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className={`text-sm font-semibold leading-tight truncate ${notif.isRead ? 'text-muted-foreground' : 'text-white'}`}>
+                                  {notif.title}
+                                </p>
+                                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2 leading-relaxed">
+                                  {notif.message}
+                                </p>
+                                <p className="text-[10px] text-muted-foreground/60 mt-1">
+                                  {new Date(notif.createdAt).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                </p>
+                              </div>
+                              {!notif.isRead && (
+                                <div className="w-2 h-2 bg-primary rounded-full shrink-0 mt-1.5" />
+                              )}
+                            </div>
+                          </button>
+                        ))
+                      )}
+                    </div>
+
+                    {notifications.length > 0 && (
+                      <div className="px-4 py-3 border-t border-white/5 text-center">
+                        <span className="text-xs text-muted-foreground">Showing last {notifications.length} notifications</span>
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
             <div className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-gradient-to-tr from-secondary to-accent p-[2px]">
               <div className="w-full h-full bg-background rounded-full border-2 border-background overflow-hidden relative">
                  {/* eslint-disable-next-line @next/next/no-img-element */}

@@ -1,12 +1,25 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class PostsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notificationsService: NotificationsService,
+  ) {}
 
   async create(data: any) {
-    return this.prisma.post.create({ data });
+    const post = await this.prisma.post.create({ data });
+    
+    // Trigger notification to all students
+    const prefix = post.type === 'URGENT' ? '🚨 URGENT: ' : '📢 NOTICE: ';
+    await this.notificationsService.notifyAllStudents(
+      `${prefix}${post.title}`,
+      post.content
+    );
+
+    return post;
   }
 
   async findAll() {

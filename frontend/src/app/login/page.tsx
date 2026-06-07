@@ -38,6 +38,10 @@ export default function LoginPage() {
         localStorage.setItem("studentId", data.user.studentId);
       }
 
+      // Store in cookies for middleware protection
+      document.cookie = `token=${data.access_token}; path=/; max-age=2592000; SameSite=Lax`;
+      document.cookie = `userRole=${data.user.role}; path=/; max-age=2592000; SameSite=Lax`;
+
       // Redirect based on role
       if (data.user.role === "ADMIN") {
         router.push("/admin");

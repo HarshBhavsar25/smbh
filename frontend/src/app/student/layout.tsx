@@ -25,17 +25,35 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
   const notifRef = useRef<HTMLDivElement>(null);
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("userRole");
+    localStorage.removeItem("studentId");
+    document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    document.cookie = "userRole=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    router.push("/");
+  };
+
   useEffect(() => {
     const token = localStorage.getItem("token");
     const studentId = localStorage.getItem("studentId");
-    if (!token) return;
+    if (!token) {
+      router.push("/login");
+      return;
+    }
 
     // Fetch student profile
     if (studentId) {
       fetch(`${API}/students/${studentId}`, {
         headers: { "Authorization": `Bearer ${token}` }
       })
-        .then(res => res.ok ? res.json() : null)
+        .then(res => {
+          if (res.status === 401) {
+            handleLogout();
+            throw new Error("Unauthorized");
+          }
+          return res.ok ? res.json() : null;
+        })
         .then(data => { if (data) setStudent(data); })
         .catch(console.error);
     }
@@ -51,6 +69,10 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
       const res = await fetch(`${API}/notifications`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      if (res.status === 401) {
+        handleLogout();
+        return;
+      }
       const data = await res.json();
       if (Array.isArray(data)) setNotifications(data);
     } catch (err) {
@@ -174,10 +196,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
                 <button 
                   onClick={() => {
                     setIsMobileMenuOpen(false);
-                    localStorage.removeItem("token");
-                    localStorage.removeItem("userRole");
-                    localStorage.removeItem("studentId");
-                    router.push("/");
+                    handleLogout();
                   }}
                   className="w-full px-4 py-3 flex items-center gap-3 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors text-sm font-medium"
                 >
@@ -239,12 +258,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
              </div>
           </div>
           <button 
-            onClick={() => {
-              localStorage.removeItem("token");
-              localStorage.removeItem("userRole");
-              localStorage.removeItem("studentId");
-              router.push("/");
-            }}
+            onClick={handleLogout}
             className="w-full px-4 py-3 flex items-center gap-3 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors text-sm font-medium"
           >
              <LogOut size={18} /> Logout

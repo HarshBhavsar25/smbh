@@ -46,6 +46,8 @@ export default function StudentsAdminPage() {
     parentName: "",
     parentContact: "",
     address: "",
+    email: "",
+    newPassword: "",
   });
 
   const [selectedRoomId, setSelectedRoomId] = useState("");
@@ -110,6 +112,8 @@ export default function StudentsAdminPage() {
       parentName: student.parentName || "",
       parentContact: student.parentContact || "",
       address: student.address || "",
+      email: student.user?.email || "",
+      newPassword: "",
     });
     setError("");
     setIsEditModalOpen(true);
@@ -122,13 +126,27 @@ export default function StudentsAdminPage() {
     setError("");
     const token = localStorage.getItem("token");
     try {
+      // Build payload — only include password if admin entered one
+      const payload: any = {
+        fullName: editForm.fullName,
+        mobile: editForm.mobile,
+        collegeName: editForm.collegeName,
+        course: editForm.course,
+        parentName: editForm.parentName,
+        parentContact: editForm.parentContact,
+        address: editForm.address,
+        email: editForm.email,
+      };
+      if (editForm.newPassword.trim()) {
+        payload.password = editForm.newPassword;
+      }
       const res = await fetch(`${API}/students/${selectedStudent.id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(editForm),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error("Failed to update student details");
       setIsEditModalOpen(false);
@@ -447,6 +465,34 @@ export default function StudentsAdminPage() {
                       onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
                       className={INPUT_CLASS}
                       placeholder="Full Address"
+                    />
+                  </div>
+
+                  {/* Credentials section */}
+                  <div className="md:col-span-2 pt-2 border-t border-white/5">
+                    <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">Login Credentials</p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium text-muted-foreground">Email Address</label>
+                    <input
+                      type="email"
+                      required
+                      value={editForm.email}
+                      onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                      className={INPUT_CLASS}
+                      placeholder="student@example.com"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium text-muted-foreground">
+                      New Password <span className="text-white/30">(leave blank to keep current)</span>
+                    </label>
+                    <input
+                      type="password"
+                      value={editForm.newPassword}
+                      onChange={(e) => setEditForm({ ...editForm, newPassword: e.target.value })}
+                      className={INPUT_CLASS}
+                      placeholder="••••••••"
                     />
                   </div>
                 </div>

@@ -114,11 +114,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: "Residents", href: "/admin/students", icon: <Users size={20} /> },
     { name: "Rooms", href: "/admin/rooms", icon: <DoorClosed size={20} /> },
     { name: "Payments", href: "/admin/fees", icon: <CreditCard size={20} /> },
-    { name: "Community Feed", href: "/admin/complaints", icon: <MessageSquare size={20} /> },
+    { name: "Complaints", href: "/admin/complaints", icon: <MessageSquare size={20} /> },
+    { name: "Documents", href: "/admin/documents", icon: <FileText size={20} /> },
     { name: "Announcements", href: "/admin/posts", icon: <Bell size={20} /> },
     { name: "Gallery", href: "/admin/gallery", icon: <ImageIcon size={20} /> },
     { name: "Leave Notices", href: "/admin/leaves", icon: <UserMinus size={20} /> },
-    { name: "Hostel Rules", href: "/admin/rules", icon: <FileText size={20} /> },
     { name: "Settings", href: "/admin/settings", icon: <Settings size={20} /> },
   ];
 

@@ -7,7 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { 
   LayoutDashboard, CreditCard, MessageSquare, 
   Plane, LogOut, Bell, Info, UserMinus,
-  Menu, X, CheckCheck, AlertCircle, Megaphone
+  Menu, X, CheckCheck, AlertCircle, Megaphone, FileText
 } from "lucide-react";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
@@ -116,7 +116,8 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
     { name: "Announcements", href: "/student/announcements", icon: <Bell size={20} /> },
     { name: "Fee Status", href: "/student/fees", icon: <CreditCard size={20} /> },
     { name: "Vacation", href: "/student/vacation", icon: <Plane size={20} /> },
-    { name: "Community", href: "/student/community", icon: <MessageSquare size={20} /> },
+    { name: "Complaints", href: "/student/community", icon: <MessageSquare size={20} /> },
+    { name: "Documents", href: "/student/documents", icon: <FileText size={20} /> },
     { name: "Hostel Rules", href: "/student/rules", icon: <Info size={20} /> },
     { name: "Leave Hostel", href: "/student/leave", icon: <UserMinus size={20} /> },
   ];

@@ -72,6 +72,7 @@ model StudentProfile {
   
   aadhaarUrl    String?
   collegeIdUrl  String?
+  panUrl        String?
 
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -116,9 +117,10 @@ model Complaint {
   description String
   image       String?
   status      ComplaintStatus @default(OPEN)
-  votesCount  Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  votesCount    Int      @default(0)
+  adminResponse String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   votes       ComplaintVote[]
   comments    ComplaintComment[]

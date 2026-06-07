@@ -82,6 +82,26 @@ export default function ComplaintsPage() {
     }
   };
 
+  const handleDeleteComplaint = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this complaint?")) return;
+    const token = localStorage.getItem("token");
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/complaints/${id}`, {
+        method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+      if (res.ok) {
+        fetchComplaints();
+      } else {
+        alert("Failed to delete complaint");
+      }
+    } catch (err) {
+      console.error("Error deleting complaint", err);
+    }
+  };
+
   const handleSubmitComment = async (complaintId: string) => {
     const text = commentText[complaintId];
     if (!text || !text.trim()) return;
@@ -125,7 +145,7 @@ export default function ComplaintsPage() {
     <div className="max-w-5xl mx-auto space-y-6">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2">Community Feed</h1>
+          <h1 className="text-3xl font-bold text-white mb-2">Complaints</h1>
           <p className="text-muted-foreground">Manage and respond to resident complaints and suggestions.</p>
         </div>
         
@@ -206,29 +226,24 @@ export default function ComplaintsPage() {
                     )}
 
                     <div className="flex items-center justify-between border-t border-white/5 pt-4">
-                      <div className="flex items-center gap-4">
-                        {/* Vote counts display */}
-                        <div className="flex items-center gap-3 bg-[#16161a] border border-white/5 rounded-full px-4 py-1.5 text-xs text-muted-foreground">
-                          <span className="flex items-center gap-1 text-emerald-500 font-bold">
-                            <ChevronUp size={16} /> {agrees} Agree
-                          </span>
-                          <span className="text-white/10">|</span>
-                          <span className="flex items-center gap-1 text-red-500 font-bold">
-                            <ChevronDown size={16} /> {disagrees} Disagree
-                          </span>
-                        </div>
-
-                        <span className="text-muted-foreground hover:text-white transition-colors text-xs font-medium flex items-center gap-1">
-                          <MessageSquare size={14} /> {comp.comments ? comp.comments.length : 0} Comments
-                        </span>
+                      <div>
+                        {/* No public voting / comments */}
                       </div>
 
-                      <button 
-                        onClick={() => handleOpenResponseModal(comp)}
-                        className="px-4 py-1.5 rounded-xl border border-white/5 bg-[#16161a] hover:bg-white/5 text-xs font-semibold text-white transition-all"
-                      >
-                        Respond & Update
-                      </button>
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={() => handleDeleteComplaint(comp.id)}
+                          className="px-4 py-1.5 rounded-xl border border-red-500/20 bg-red-500/10 hover:bg-red-500/20 text-xs font-semibold text-red-500 transition-all"
+                        >
+                          Delete
+                        </button>
+                        <button 
+                          onClick={() => handleOpenResponseModal(comp)}
+                          className="px-4 py-1.5 rounded-xl border border-white/5 bg-[#16161a] hover:bg-white/5 text-xs font-semibold text-white transition-all"
+                        >
+                          Respond & Update
+                        </button>
+                      </div>
                     </div>
                   </motion.div>
                 );

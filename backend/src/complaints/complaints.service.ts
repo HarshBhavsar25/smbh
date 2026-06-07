@@ -67,6 +67,24 @@ export class ComplaintsService {
     return complaint;
   }
 
+  async findForStudent(studentId: string) {
+    return this.prisma.complaint.findMany({
+      where: { studentId },
+      include: {
+        student: true,
+        comments: { include: { student: true } },
+        votes: true
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async remove(id: string) {
+    await this.prisma.complaintComment.deleteMany({ where: { complaintId: id } });
+    await this.prisma.complaintVote.deleteMany({ where: { complaintId: id } });
+    return this.prisma.complaint.delete({ where: { id } });
+  }
+
   async addComment(complaintId: string, studentId: string, text: string) {
     const comment = await this.prisma.complaintComment.create({
       data: { complaintId, studentId, text },

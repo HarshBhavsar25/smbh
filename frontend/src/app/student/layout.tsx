@@ -143,7 +143,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
               className="fixed top-0 bottom-0 left-0 w-64 bg-[#0f0f13] border-r border-white/5 flex flex-col justify-between z-50 md:hidden"
             >
-              <div>
+              <div className="flex flex-col flex-1 min-h-0">
                 <div className="h-20 flex items-center justify-between px-6 border-b border-white/5">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center font-bold text-white shadow-lg shadow-primary/20">
@@ -162,7 +162,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
                   </button>
                 </div>
                 
-                <nav className="p-4 space-y-1">
+                <nav className="p-4 space-y-1 overflow-y-auto flex-1">
                   {navItems.map((item) => {
                     const isActive = pathname === item.href || (pathname.startsWith(item.href) && item.href !== '/student');
                     return (
@@ -211,7 +211,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
 
       {/* SIDEBAR */}
       <aside className="w-64 border-r border-white/5 bg-[#0f0f13] flex flex-col justify-between hidden md:flex shrink-0 relative z-20">
-        <div>
+        <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
           <div className="h-20 flex items-center px-6 gap-3 border-b border-white/5">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center font-bold text-white shadow-lg shadow-primary/20">
               SM
@@ -222,7 +222,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
             </div>
           </div>
           
-          <nav className="p-4 space-y-1">
+          <nav className="p-4 space-y-1 overflow-y-auto">
             {navItems.map((item) => {
               const isActive = pathname === item.href || (pathname.startsWith(item.href) && item.href !== '/student');
               return (

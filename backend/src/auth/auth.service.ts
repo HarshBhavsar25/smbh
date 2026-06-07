@@ -62,6 +62,16 @@ export class AuthService {
           parentName: data.parentName,
           parentContact: data.parentContact,
           address: data.address,
+          dob: data.dob,
+          bloodGroup: data.bloodGroup,
+          academicYear: data.academicYear,
+          guardianName2: data.guardianName2,
+          guardianContact2: data.guardianContact2,
+          vehicleNo: data.vehicleNo,
+          roomId: data.roomId || null,
+          locationInRoom: data.locationInRoom || null,
+          yearOfStudy: data.yearOfStudy,
+          yearOfStudyOther: data.yearOfStudyOther,
         },
       });
     }

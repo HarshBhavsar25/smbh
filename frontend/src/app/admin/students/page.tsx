@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Users, UserPlus, Search, Edit2, Trash2, DoorClosed, 
-  Phone, Mail, BookOpen, MapPin, X, Check, Loader2, CreditCard, Save
+  Phone, Mail, BookOpen, MapPin, X, Check, Loader2, CreditCard, Save, Eye
 } from "lucide-react";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
@@ -22,6 +22,16 @@ const emptyStudent = {
   parentName: "",
   parentContact: "",
   address: "",
+  dob: "",
+  bloodGroup: "",
+  academicYear: "CURRENT",
+  guardianName2: "",
+  guardianContact2: "",
+  vehicleNo: "",
+  roomId: "",
+  locationInRoom: "",
+  yearOfStudy: "1st",
+  yearOfStudyOther: "",
 };
 
 export default function StudentsAdminPage() {
@@ -34,6 +44,7 @@ export default function StudentsAdminPage() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
 
   // Form states
@@ -48,9 +59,20 @@ export default function StudentsAdminPage() {
     address: "",
     email: "",
     newPassword: "",
+    dob: "",
+    bloodGroup: "",
+    academicYear: "CURRENT",
+    guardianName2: "",
+    guardianContact2: "",
+    vehicleNo: "",
+    roomId: "",
+    locationInRoom: "",
+    yearOfStudy: "1st",
+    yearOfStudyOther: "",
   });
 
   const [selectedRoomId, setSelectedRoomId] = useState("");
+  const [selectedLocationInRoom, setSelectedLocationInRoom] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -114,6 +136,16 @@ export default function StudentsAdminPage() {
       address: student.address || "",
       email: student.user?.email || "",
       newPassword: "",
+      dob: student.dob || "",
+      bloodGroup: student.bloodGroup || "",
+      academicYear: student.academicYear || "CURRENT",
+      guardianName2: student.guardianName2 || "",
+      guardianContact2: student.guardianContact2 || "",
+      vehicleNo: student.vehicleNo || "",
+      roomId: student.roomId || "",
+      locationInRoom: student.locationInRoom || "",
+      yearOfStudy: student.yearOfStudy || "1st",
+      yearOfStudyOther: student.yearOfStudyOther || "",
     });
     setError("");
     setIsEditModalOpen(true);
@@ -136,6 +168,16 @@ export default function StudentsAdminPage() {
         parentContact: editForm.parentContact,
         address: editForm.address,
         email: editForm.email,
+        dob: editForm.dob,
+        bloodGroup: editForm.bloodGroup,
+        academicYear: editForm.academicYear,
+        guardianName2: editForm.guardianName2,
+        guardianContact2: editForm.guardianContact2,
+        vehicleNo: editForm.vehicleNo,
+        roomId: editForm.roomId || null,
+        locationInRoom: editForm.locationInRoom || null,
+        yearOfStudy: editForm.yearOfStudy,
+        yearOfStudyOther: editForm.yearOfStudyOther,
       };
       if (editForm.newPassword.trim()) {
         payload.password = editForm.newPassword;
@@ -159,6 +201,12 @@ export default function StudentsAdminPage() {
     }
   };
 
+  /* ---------- View Details ---------- */
+  const openViewModal = (student: any) => {
+    setSelectedStudent(student);
+    setIsViewModalOpen(true);
+  };
+
   /* ---------- Assign Room ---------- */
   const handleAssignRoom = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -173,12 +221,16 @@ export default function StudentsAdminPage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ roomId: selectedRoomId || null }),
+        body: JSON.stringify({
+          roomId: selectedRoomId || null,
+          locationInRoom: selectedLocationInRoom || null,
+        }),
       });
       if (!res.ok) throw new Error("Failed to assign room");
       setIsAssignModalOpen(false);
       setSelectedStudent(null);
       setSelectedRoomId("");
+      setSelectedLocationInRoom("");
       fetchData();
     } catch (err: any) {
       setError(err.message);
@@ -307,6 +359,14 @@ export default function StudentsAdminPage() {
                     </td>
                     <td className="p-6 text-right">
                       <div className="flex items-center justify-end gap-2">
+                        {/* View Details */}
+                        <button
+                          title="View Details"
+                          onClick={() => openViewModal(student)}
+                          className="p-2 hover:bg-white/10 rounded-lg text-muted-foreground hover:text-white transition-colors"
+                        >
+                          <Eye size={16} />
+                        </button>
                         {/* Edit Details */}
                         <button
                           title="Edit Details"
@@ -321,6 +381,7 @@ export default function StudentsAdminPage() {
                           onClick={() => {
                             setSelectedStudent(student);
                             setSelectedRoomId(student.roomId || "");
+                            setSelectedLocationInRoom(student.locationInRoom || "");
                             setIsAssignModalOpen(true);
                           }}
                           className="p-2 hover:bg-white/5 rounded-lg text-muted-foreground hover:text-white transition-colors"
@@ -366,32 +427,235 @@ export default function StudentsAdminPage() {
                 </button>
               </div>
               {error && <div className="mb-4 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-sm flex-shrink-0">{error}</div>}
-              <form onSubmit={handleAddStudent} className="space-y-4 overflow-y-auto flex-1 pr-1 -mr-1">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {[
-                    { label: "Full Name", key: "fullName", placeholder: "John Doe" },
-                    { label: "Email Address", key: "email", type: "email", placeholder: "john@example.com" },
-                    { label: "Login Password", key: "password", type: "password", placeholder: "••••••••" },
-                    { label: "Mobile Number", key: "mobile", placeholder: "+91 98765 43210" },
-                    { label: "College Name", key: "collegeName", placeholder: "COEP, Pune" },
-                    { label: "Course / Branch", key: "course", placeholder: "B.Tech Computer Science" },
-                    { label: "Parent / Guardian Name", key: "parentName", placeholder: "Robert Doe" },
-                    { label: "Parent Contact", key: "parentContact", placeholder: "+91 98765 43211" },
-                  ].map(({ label, key, type, placeholder }) => (
-                    <div key={key} className="space-y-1.5">
-                      <label className="text-sm font-medium text-muted-foreground">{label}</label>
+              <form onSubmit={handleAddStudent} className="space-y-6 overflow-y-auto flex-1 pr-1 -mr-1">
+                
+                {/* Personal details */}
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-primary mb-3">Personal Details</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium text-muted-foreground">Full Name *</label>
                       <input
-                        type={type || "text"}
+                        type="text"
                         required
-                        value={(newStudent as any)[key]}
-                        onChange={(e) => setNewStudent({ ...newStudent, [key]: e.target.value })}
+                        value={newStudent.fullName}
+                        onChange={(e) => setNewStudent({ ...newStudent, fullName: e.target.value })}
                         className={INPUT_CLASS}
-                        placeholder={placeholder}
+                        placeholder="John Doe"
                       />
                     </div>
-                  ))}
-                  <div className="space-y-1.5 md:col-span-2">
-                    <label className="text-sm font-medium text-muted-foreground">Home Address</label>
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium text-muted-foreground">Date of Birth</label>
+                      <input
+                        type="date"
+                        value={newStudent.dob}
+                        onChange={(e) => setNewStudent({ ...newStudent, dob: e.target.value })}
+                        className={INPUT_CLASS}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium text-muted-foreground">Mobile Number *</label>
+                      <input
+                        type="text"
+                        required
+                        value={newStudent.mobile}
+                        onChange={(e) => setNewStudent({ ...newStudent, mobile: e.target.value })}
+                        className={INPUT_CLASS}
+                        placeholder="+91 98765 43210"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium text-muted-foreground">Blood Group</label>
+                      <select
+                        value={newStudent.bloodGroup}
+                        onChange={(e) => setNewStudent({ ...newStudent, bloodGroup: e.target.value })}
+                        className={INPUT_CLASS}
+                      >
+                        <option value="">Select Blood Group</option>
+                        {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map(bg => (
+                          <option key={bg} value={bg}>{bg}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium text-muted-foreground">Vehicle Number (Optional)</label>
+                      <input
+                        type="text"
+                        value={newStudent.vehicleNo}
+                        onChange={(e) => setNewStudent({ ...newStudent, vehicleNo: e.target.value })}
+                        className={INPUT_CLASS}
+                        placeholder="MH-12-XX-XXXX"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Academic details */}
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-primary mb-3">Academic Details</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium text-muted-foreground">College Name *</label>
+                      <input
+                        type="text"
+                        required
+                        value={newStudent.collegeName}
+                        onChange={(e) => setNewStudent({ ...newStudent, collegeName: e.target.value })}
+                        className={INPUT_CLASS}
+                        placeholder="COEP, Pune"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium text-muted-foreground">Course / Branch *</label>
+                      <input
+                        type="text"
+                        required
+                        value={newStudent.course}
+                        onChange={(e) => setNewStudent({ ...newStudent, course: e.target.value })}
+                        className={INPUT_CLASS}
+                        placeholder="B.Tech Computer Science"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium text-muted-foreground">Year of Study</label>
+                      <select
+                        value={newStudent.yearOfStudy}
+                        onChange={(e) => setNewStudent({ ...newStudent, yearOfStudy: e.target.value })}
+                        className={INPUT_CLASS}
+                      >
+                        {["1st", "2nd", "3rd", "4th", "MBA", "MCA", "BCA", "Other"].map(yr => (
+                          <option key={yr} value={yr}>{yr}</option>
+                        ))}
+                      </select>
+                    </div>
+                    {newStudent.yearOfStudy === "Other" && (
+                      <div className="space-y-1.5">
+                        <label className="text-sm font-medium text-muted-foreground">Specify Year of Study *</label>
+                        <input
+                          type="text"
+                          required
+                          value={newStudent.yearOfStudyOther}
+                          onChange={(e) => setNewStudent({ ...newStudent, yearOfStudyOther: e.target.value })}
+                          className={INPUT_CLASS}
+                          placeholder="e.g. M.Tech, PhD"
+                        />
+                      </div>
+                    )}
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium text-muted-foreground">Academic Year Status</label>
+                      <select
+                        value={newStudent.academicYear}
+                        onChange={(e) => setNewStudent({ ...newStudent, academicYear: e.target.value })}
+                        className={INPUT_CLASS}
+                      >
+                        <option value="CURRENT">Current Academic Year</option>
+                        <option value="PREVIOUS">Previous Academic Year</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Room Assignment & Location */}
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-primary mb-3">Room & Location Assignment</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium text-muted-foreground">Room</label>
+                      <select
+                        value={newStudent.roomId}
+                        onChange={(e) => setNewStudent({ ...newStudent, roomId: e.target.value, locationInRoom: "" })}
+                        className={INPUT_CLASS}
+                      >
+                        <option value="">No Room (Unassigned)</option>
+                        {rooms.map(room => {
+                          const occ = room.students?.length || 0;
+                          return (
+                            <option key={room.id} value={room.id} disabled={occ >= room.capacity}>
+                              Room {room.roomNumber} ({room.type.replace("_", " ")}) — {occ}/{room.capacity} occupied
+                            </option>
+                          );
+                        })}
+                      </select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium text-muted-foreground">Location in Room</label>
+                      <select
+                        value={newStudent.locationInRoom}
+                        onChange={(e) => setNewStudent({ ...newStudent, locationInRoom: e.target.value })}
+                        className={INPUT_CLASS}
+                        disabled={!newStudent.roomId}
+                      >
+                        <option value="">Select Location</option>
+                        {newStudent.roomId && (rooms.find(r => r.id === newStudent.roomId)?.locations || []).map((loc: string) => {
+                          const isOccupied = rooms.find(r => r.id === newStudent.roomId)?.students?.some((s: any) => s.locationInRoom === loc);
+                          return (
+                            <option key={loc} value={loc} disabled={isOccupied}>
+                              {loc} {isOccupied ? "(Occupied)" : ""}
+                            </option>
+                          );
+                        })}
+                      </select>
+                      {!newStudent.roomId && (
+                        <p className="text-[11px] text-muted-foreground/60 italic mt-1">Assign a room first to select a location.</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Guardian details */}
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-primary mb-3">Guardian Details</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium text-muted-foreground">Parent / Guardian Name *</label>
+                      <input
+                        type="text"
+                        required
+                        value={newStudent.parentName}
+                        onChange={(e) => setNewStudent({ ...newStudent, parentName: e.target.value })}
+                        className={INPUT_CLASS}
+                        placeholder="Robert Doe"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium text-muted-foreground">Parent Contact *</label>
+                      <input
+                        type="text"
+                        required
+                        value={newStudent.parentContact}
+                        onChange={(e) => setNewStudent({ ...newStudent, parentContact: e.target.value })}
+                        className={INPUT_CLASS}
+                        placeholder="+91 98765 43211"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium text-muted-foreground">Guardian Name 2 (Secondary)</label>
+                      <input
+                        type="text"
+                        value={newStudent.guardianName2}
+                        onChange={(e) => setNewStudent({ ...newStudent, guardianName2: e.target.value })}
+                        className={INPUT_CLASS}
+                        placeholder="e.g. Uncle / Brother"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium text-muted-foreground">Guardian Contact 2 (Secondary)</label>
+                      <input
+                        type="text"
+                        value={newStudent.guardianContact2}
+                        onChange={(e) => setNewStudent({ ...newStudent, guardianContact2: e.target.value })}
+                        className={INPUT_CLASS}
+                        placeholder="+91 98765 43212"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Home address */}
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-primary mb-3">Home Address</h4>
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium text-muted-foreground">Home Address *</label>
                     <input
                       type="text"
                       required
@@ -402,6 +666,36 @@ export default function StudentsAdminPage() {
                     />
                   </div>
                 </div>
+
+                {/* Login credentials */}
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-primary mb-3">Login Credentials</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium text-muted-foreground">Email Address *</label>
+                      <input
+                        type="email"
+                        required
+                        value={newStudent.email}
+                        onChange={(e) => setNewStudent({ ...newStudent, email: e.target.value })}
+                        className={INPUT_CLASS}
+                        placeholder="john@example.com"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium text-muted-foreground">Login Password *</label>
+                      <input
+                        type="password"
+                        required
+                        value={newStudent.password}
+                        onChange={(e) => setNewStudent({ ...newStudent, password: e.target.value })}
+                        className={INPUT_CLASS}
+                        placeholder="••••••••"
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 <div className="flex justify-end gap-3 pt-4 border-t border-white/5 flex-shrink-0">
                   <button type="button" onClick={() => setIsAddModalOpen(false)} className="px-5 py-3 rounded-xl border border-white/5 bg-[#16161a] hover:bg-white/5 transition-colors text-white font-semibold text-sm">Cancel</button>
                   <button type="submit" disabled={isSubmitting} className="px-5 py-3 rounded-xl bg-primary hover:bg-primary/90 transition-all text-primary-foreground font-semibold text-sm flex items-center gap-2">
@@ -434,30 +728,235 @@ export default function StudentsAdminPage() {
                 </button>
               </div>
               {error && <div className="mb-4 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-sm flex-shrink-0">{error}</div>}
-              <form onSubmit={handleEditStudent} className="space-y-4 overflow-y-auto flex-1 pr-1 -mr-1">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {[
-                    { label: "Full Name", key: "fullName", placeholder: "John Doe" },
-                    { label: "Mobile Number", key: "mobile", placeholder: "+91 98765 43210" },
-                    { label: "College Name", key: "collegeName", placeholder: "COEP, Pune" },
-                    { label: "Course / Branch", key: "course", placeholder: "B.Tech Computer Science" },
-                    { label: "Parent / Guardian Name", key: "parentName", placeholder: "Robert Doe" },
-                    { label: "Parent Contact", key: "parentContact", placeholder: "+91 98765 43211" },
-                  ].map(({ label, key, placeholder }) => (
-                    <div key={key} className="space-y-1.5">
-                      <label className="text-sm font-medium text-muted-foreground">{label}</label>
+              <form onSubmit={handleEditStudent} className="space-y-6 overflow-y-auto flex-1 pr-1 -mr-1">
+                
+                {/* Personal details */}
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-primary mb-3">Personal Details</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium text-muted-foreground">Full Name *</label>
                       <input
                         type="text"
                         required
-                        value={(editForm as any)[key]}
-                        onChange={(e) => setEditForm({ ...editForm, [key]: e.target.value })}
+                        value={editForm.fullName}
+                        onChange={(e) => setEditForm({ ...editForm, fullName: e.target.value })}
                         className={INPUT_CLASS}
-                        placeholder={placeholder}
+                        placeholder="John Doe"
                       />
                     </div>
-                  ))}
-                  <div className="space-y-1.5 md:col-span-2">
-                    <label className="text-sm font-medium text-muted-foreground">Home Address</label>
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium text-muted-foreground">Date of Birth</label>
+                      <input
+                        type="date"
+                        value={editForm.dob}
+                        onChange={(e) => setEditForm({ ...editForm, dob: e.target.value })}
+                        className={INPUT_CLASS}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium text-muted-foreground">Mobile Number *</label>
+                      <input
+                        type="text"
+                        required
+                        value={editForm.mobile}
+                        onChange={(e) => setEditForm({ ...editForm, mobile: e.target.value })}
+                        className={INPUT_CLASS}
+                        placeholder="+91 98765 43210"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium text-muted-foreground">Blood Group</label>
+                      <select
+                        value={editForm.bloodGroup}
+                        onChange={(e) => setEditForm({ ...editForm, bloodGroup: e.target.value })}
+                        className={INPUT_CLASS}
+                      >
+                        <option value="">Select Blood Group</option>
+                        {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map(bg => (
+                          <option key={bg} value={bg}>{bg}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium text-muted-foreground">Vehicle Number (Optional)</label>
+                      <input
+                        type="text"
+                        value={editForm.vehicleNo}
+                        onChange={(e) => setEditForm({ ...editForm, vehicleNo: e.target.value })}
+                        className={INPUT_CLASS}
+                        placeholder="MH-12-XX-XXXX"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Academic details */}
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-primary mb-3">Academic Details</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium text-muted-foreground">College Name *</label>
+                      <input
+                        type="text"
+                        required
+                        value={editForm.collegeName}
+                        onChange={(e) => setEditForm({ ...editForm, collegeName: e.target.value })}
+                        className={INPUT_CLASS}
+                        placeholder="COEP, Pune"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium text-muted-foreground">Course / Branch *</label>
+                      <input
+                        type="text"
+                        required
+                        value={editForm.course}
+                        onChange={(e) => setEditForm({ ...editForm, course: e.target.value })}
+                        className={INPUT_CLASS}
+                        placeholder="B.Tech Computer Science"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium text-muted-foreground">Year of Study</label>
+                      <select
+                        value={editForm.yearOfStudy}
+                        onChange={(e) => setEditForm({ ...editForm, yearOfStudy: e.target.value })}
+                        className={INPUT_CLASS}
+                      >
+                        {["1st", "2nd", "3rd", "4th", "MBA", "MCA", "BCA", "Other"].map(yr => (
+                          <option key={yr} value={yr}>{yr}</option>
+                        ))}
+                      </select>
+                    </div>
+                    {editForm.yearOfStudy === "Other" && (
+                      <div className="space-y-1.5">
+                        <label className="text-sm font-medium text-muted-foreground">Specify Year of Study *</label>
+                        <input
+                          type="text"
+                          required
+                          value={editForm.yearOfStudyOther}
+                          onChange={(e) => setEditForm({ ...editForm, yearOfStudyOther: e.target.value })}
+                          className={INPUT_CLASS}
+                          placeholder="e.g. M.Tech, PhD"
+                        />
+                      </div>
+                    )}
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium text-muted-foreground">Academic Year Status</label>
+                      <select
+                        value={editForm.academicYear}
+                        onChange={(e) => setEditForm({ ...editForm, academicYear: e.target.value })}
+                        className={INPUT_CLASS}
+                      >
+                        <option value="CURRENT">Current Academic Year</option>
+                        <option value="PREVIOUS">Previous Academic Year</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Room Assignment & Location */}
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-primary mb-3">Room & Location Assignment</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium text-muted-foreground">Room</label>
+                      <select
+                        value={editForm.roomId}
+                        onChange={(e) => setEditForm({ ...editForm, roomId: e.target.value, locationInRoom: "" })}
+                        className={INPUT_CLASS}
+                      >
+                        <option value="">No Room (Unassigned)</option>
+                        {rooms.map(room => {
+                          const occ = room.students?.length || 0;
+                          return (
+                            <option key={room.id} value={room.id} disabled={occ >= room.capacity && room.id !== selectedStudent.roomId}>
+                              Room {room.roomNumber} ({room.type.replace("_", " ")}) — {occ}/{room.capacity} occupied
+                            </option>
+                          );
+                        })}
+                      </select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium text-muted-foreground">Location in Room</label>
+                      <select
+                        value={editForm.locationInRoom}
+                        onChange={(e) => setEditForm({ ...editForm, locationInRoom: e.target.value })}
+                        className={INPUT_CLASS}
+                        disabled={!editForm.roomId}
+                      >
+                        <option value="">Select Location</option>
+                        {editForm.roomId && (rooms.find(r => r.id === editForm.roomId)?.locations || []).map((loc: string) => {
+                          const isOccupied = rooms.find(r => r.id === editForm.roomId)?.students?.some((s: any) => s.locationInRoom === loc && s.id !== selectedStudent.id);
+                          return (
+                            <option key={loc} value={loc} disabled={isOccupied}>
+                              {loc} {isOccupied ? "(Occupied)" : ""}
+                            </option>
+                          );
+                        })}
+                      </select>
+                      {!editForm.roomId && (
+                        <p className="text-[11px] text-muted-foreground/60 italic mt-1">Assign a room first to select a location.</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Guardian details */}
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-primary mb-3">Guardian Details</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium text-muted-foreground">Parent / Guardian Name *</label>
+                      <input
+                        type="text"
+                        required
+                        value={editForm.parentName}
+                        onChange={(e) => setEditForm({ ...editForm, parentName: e.target.value })}
+                        className={INPUT_CLASS}
+                        placeholder="Robert Doe"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium text-muted-foreground">Parent Contact *</label>
+                      <input
+                        type="text"
+                        required
+                        value={editForm.parentContact}
+                        onChange={(e) => setEditForm({ ...editForm, parentContact: e.target.value })}
+                        className={INPUT_CLASS}
+                        placeholder="+91 98765 43211"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium text-muted-foreground">Guardian Name 2 (Secondary)</label>
+                      <input
+                        type="text"
+                        value={editForm.guardianName2}
+                        onChange={(e) => setEditForm({ ...editForm, guardianName2: e.target.value })}
+                        className={INPUT_CLASS}
+                        placeholder="e.g. Uncle / Brother"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium text-muted-foreground">Guardian Contact 2 (Secondary)</label>
+                      <input
+                        type="text"
+                        value={editForm.guardianContact2}
+                        onChange={(e) => setEditForm({ ...editForm, guardianContact2: e.target.value })}
+                        className={INPUT_CLASS}
+                        placeholder="+91 98765 43212"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Home address */}
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-primary mb-3">Home Address</h4>
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium text-muted-foreground">Home Address *</label>
                     <input
                       type="text"
                       required
@@ -467,35 +966,38 @@ export default function StudentsAdminPage() {
                       placeholder="Full Address"
                     />
                   </div>
+                </div>
 
-                  {/* Credentials section */}
-                  <div className="md:col-span-2 pt-2 border-t border-white/5">
-                    <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">Login Credentials</p>
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-muted-foreground">Email Address</label>
-                    <input
-                      type="email"
-                      required
-                      value={editForm.email}
-                      onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
-                      className={INPUT_CLASS}
-                      placeholder="student@example.com"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-muted-foreground">
-                      New Password <span className="text-white/30">(leave blank to keep current)</span>
-                    </label>
-                    <input
-                      type="password"
-                      value={editForm.newPassword}
-                      onChange={(e) => setEditForm({ ...editForm, newPassword: e.target.value })}
-                      className={INPUT_CLASS}
-                      placeholder="••••••••"
-                    />
+                {/* Credentials section */}
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-primary mb-3">Login Credentials</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium text-muted-foreground">Email Address *</label>
+                      <input
+                        type="email"
+                        required
+                        value={editForm.email}
+                        onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                        className={INPUT_CLASS}
+                        placeholder="student@example.com"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium text-muted-foreground">
+                        New Password <span className="text-white/30">(leave blank to keep current)</span>
+                      </label>
+                      <input
+                        type="password"
+                        value={editForm.newPassword}
+                        onChange={(e) => setEditForm({ ...editForm, newPassword: e.target.value })}
+                        className={INPUT_CLASS}
+                        placeholder="••••••••"
+                      />
+                    </div>
                   </div>
                 </div>
+
                 <div className="flex justify-end gap-3 pt-4 border-t border-white/5 flex-shrink-0">
                   <button type="button" onClick={() => setIsEditModalOpen(false)} className="px-5 py-3 rounded-xl border border-white/5 bg-[#16161a] hover:bg-white/5 transition-colors text-white font-semibold text-sm">Cancel</button>
                   <button type="submit" disabled={isSubmitting} className="px-5 py-3 rounded-xl bg-primary hover:bg-primary/90 transition-all text-primary-foreground font-semibold text-sm flex items-center gap-2">
@@ -530,7 +1032,10 @@ export default function StudentsAdminPage() {
                   <label className="text-sm font-medium text-muted-foreground">Select Room for {selectedStudent.fullName}</label>
                   <select
                     value={selectedRoomId}
-                    onChange={(e) => setSelectedRoomId(e.target.value)}
+                    onChange={(e) => {
+                      setSelectedRoomId(e.target.value);
+                      setSelectedLocationInRoom("");
+                    }}
                     className="w-full bg-[#16161a] border border-white/5 rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-1 focus:ring-primary/50"
                   >
                     <option value="">No Room (Unassign)</option>
@@ -544,6 +1049,28 @@ export default function StudentsAdminPage() {
                     })}
                   </select>
                 </div>
+
+                {selectedRoomId && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-muted-foreground">Select Spot / Location in Room</label>
+                    <select
+                      value={selectedLocationInRoom}
+                      onChange={(e) => setSelectedLocationInRoom(e.target.value)}
+                      className="w-full bg-[#16161a] border border-white/5 rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-1 focus:ring-primary/50"
+                    >
+                      <option value="">Select Location</option>
+                      {(rooms.find(r => r.id === selectedRoomId)?.locations || []).map((loc: string) => {
+                        const isOccupied = rooms.find(r => r.id === selectedRoomId)?.students?.some((s: any) => s.locationInRoom === loc && s.id !== selectedStudent.id);
+                        return (
+                          <option key={loc} value={loc} disabled={isOccupied}>
+                            {loc} {isOccupied ? "(Occupied)" : ""}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </div>
+                )}
+
                 <div className="flex justify-end gap-3 pt-4 border-t border-white/5 flex-shrink-0">
                   <button type="button" onClick={() => setIsAssignModalOpen(false)} className="px-5 py-3 rounded-xl border border-white/5 bg-[#16161a] hover:bg-white/5 transition-colors text-white font-semibold text-sm">Cancel</button>
                   <button type="submit" disabled={isSubmitting} className="px-5 py-3 rounded-xl bg-primary hover:bg-primary/90 transition-all text-primary-foreground font-semibold text-sm flex items-center gap-2">
@@ -551,6 +1078,180 @@ export default function StudentsAdminPage() {
                   </button>
                 </div>
               </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ===== MODAL: View Student Details ===== */}
+      <AnimatePresence>
+        {isViewModalOpen && selectedStudent && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-3xl bg-[#121214] border border-white/5 rounded-3xl shadow-2xl p-6 md:p-8 max-h-[90vh] flex flex-col"
+            >
+              <div className="flex justify-between items-center mb-6 flex-shrink-0 border-b border-white/5 pb-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 rounded-full border border-white/10 overflow-hidden bg-white/5 flex-shrink-0 flex items-center justify-center">
+                    {selectedStudent.photo ? (
+                      <img
+                        src={selectedStudent.photo}
+                        alt="Profile"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <Users size={32} className="text-muted-foreground/50" />
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="text-xl md:text-2xl font-bold text-white">{selectedStudent.fullName}</h3>
+                    <p className="text-sm text-muted-foreground">{selectedStudent.user?.email}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setIsViewModalOpen(false);
+                    setSelectedStudent(null);
+                  }}
+                  className="text-muted-foreground hover:text-white transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="space-y-6 overflow-y-auto flex-1 pr-1 -mr-1 text-sm">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Personal details */}
+                  <div className="space-y-4 bg-white/5 p-5 rounded-2xl border border-white/5">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-primary">Personal Details</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <span className="text-xs text-muted-foreground block">Mobile Number</span>
+                        <span className="text-white font-medium">{selectedStudent.mobile || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="text-xs text-muted-foreground block">Date of Birth</span>
+                        <span className="text-white font-medium">{selectedStudent.dob || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="text-xs text-muted-foreground block">Blood Group</span>
+                        <span className="text-white font-medium">{selectedStudent.bloodGroup || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="text-xs text-muted-foreground block">Vehicle Number</span>
+                        <span className="text-white font-medium">{selectedStudent.vehicleNo || "N/A"}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Room assignment */}
+                  <div className="space-y-4 bg-white/5 p-5 rounded-2xl border border-white/5">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-primary">Room & Spot Assignment</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <span className="text-xs text-muted-foreground block">Room Number</span>
+                        <span className="text-white font-medium">
+                          {selectedStudent.room ? `Room ${selectedStudent.room.roomNumber}` : "Unassigned"}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-xs text-muted-foreground block">Room Type</span>
+                        <span className="text-white font-medium">
+                          {selectedStudent.room ? selectedStudent.room.type.replace("_", " ") : "N/A"}
+                        </span>
+                      </div>
+                      <div className="col-span-2">
+                        <span className="text-xs text-muted-foreground block">Spot Location in Room</span>
+                        <span className="text-white font-medium">{selectedStudent.locationInRoom || "N/A"}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Academic Details */}
+                  <div className="space-y-4 bg-white/5 p-5 rounded-2xl border border-white/5">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-primary">Academic Details</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="col-span-2">
+                        <span className="text-xs text-muted-foreground block">College Name</span>
+                        <span className="text-white font-medium">{selectedStudent.collegeName || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="text-xs text-muted-foreground block">Course / Branch</span>
+                        <span className="text-white font-medium">{selectedStudent.course || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="text-xs text-muted-foreground block">Year of Study</span>
+                        <span className="text-white font-medium">
+                          {selectedStudent.yearOfStudy === "Other"
+                            ? selectedStudent.yearOfStudyOther
+                            : selectedStudent.yearOfStudy || "N/A"}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-xs text-muted-foreground block">Academic Year Status</span>
+                        <span className="text-white font-medium">
+                          {selectedStudent.academicYear === "PREVIOUS" ? "Previous Year" : "Current Year"}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-xs text-muted-foreground block">Admission Date</span>
+                        <span className="text-white font-medium">
+                          {selectedStudent.admissionDate
+                            ? new Date(selectedStudent.admissionDate).toLocaleDateString("en-IN")
+                            : "N/A"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Guardian Details */}
+                  <div className="space-y-4 bg-white/5 p-5 rounded-2xl border border-white/5">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-primary">Guardian Details</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <span className="text-xs text-muted-foreground block">Parent / Guardian Name</span>
+                        <span className="text-white font-medium">{selectedStudent.parentName || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="text-xs text-muted-foreground block">Parent Contact</span>
+                        <span className="text-white font-medium">{selectedStudent.parentContact || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="text-xs text-muted-foreground block">Secondary Guardian Name</span>
+                        <span className="text-white font-medium">{selectedStudent.guardianName2 || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="text-xs text-muted-foreground block">Secondary Guardian Contact</span>
+                        <span className="text-white font-medium">{selectedStudent.guardianContact2 || "N/A"}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Address */}
+                  <div className="col-span-1 md:col-span-2 space-y-4 bg-white/5 p-5 rounded-2xl border border-white/5">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-primary">Home Address</h4>
+                    <div>
+                      <span className="text-xs text-muted-foreground block">Address</span>
+                      <span className="text-white font-medium">{selectedStudent.address || "N/A"}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-4 border-t border-white/5 mt-6 flex-shrink-0">
+                <button
+                  onClick={() => {
+                    setIsViewModalOpen(false);
+                    setSelectedStudent(null);
+                  }}
+                  className="px-6 py-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-white font-semibold text-sm transition-colors"
+                >
+                  Close
+                </button>
+              </div>
             </motion.div>
           </div>
         )}

@@ -70,6 +70,16 @@ model StudentProfile {
   room          Room?    @relation(fields: [roomId], references: [id])
   feeStatus     FeeStatus @default(PENDING)
   
+  dob             String?
+  bloodGroup      String?
+  academicYear    String?
+  guardianName2   String?
+  guardianContact2 String?
+  vehicleNo       String?
+  locationInRoom  String?
+  yearOfStudy     String?
+  yearOfStudyOther String?
+  
   aadhaarUrl    String?
   collegeIdUrl  String?
   panUrl        String?
@@ -92,6 +102,13 @@ model Room {
   currentOccupancy Int      @default(0)
   type             RoomType
   students         StudentProfile[]
+  
+  locations        String[] @default([])
+  cupboard         Boolean  @default(false)
+  bed              Boolean  @default(false)
+  geyser           Boolean  @default(false)
+  electricBoard    Boolean  @default(false)
+
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 }

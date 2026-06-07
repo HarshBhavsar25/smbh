@@ -3,7 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Wifi, Shield, Zap, Droplets, MapPin, Phone, Mail,
-  Wind, Lock, Coffee, Monitor, CheckCircle2, BedDouble, ArrowRight, X
+  Wind, Lock, Coffee, Monitor, CheckCircle2, BedDouble, ArrowRight, X, LayoutDashboard
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -12,8 +12,18 @@ import { useState, useEffect } from "react";
 export default function LandingPage() {
   const [galleryMedia, setGalleryMedia] = useState<{ id: string, url: string, type: string }[]>([]);
   const [selectedMedia, setSelectedMedia] = useState<any>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
 
   useEffect(() => {
+    // Check if user has a valid session
+    const token = localStorage.getItem("token");
+    const role = localStorage.getItem("userRole");
+    if (token) {
+      setIsLoggedIn(true);
+      setUserRole(role);
+    }
+
     fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/gallery`)
       .then(res => res.json())
       .then(data => setGalleryMedia(data))
@@ -56,9 +66,18 @@ export default function LandingPage() {
             <Link href="#location" className="hover:text-foreground transition-colors">Location</Link>
           </div>
           <div className="flex items-center gap-4">
-            <Link href="/login" className="px-5 py-2.5 rounded-full text-sm font-semibold bg-white/5 hover:bg-white/10 border border-white/10 transition-all">
-              Login
-            </Link>
+            {isLoggedIn ? (
+              <Link
+                href={userRole === "ADMIN" ? "/admin" : "/student"}
+                className="px-5 py-2.5 rounded-full text-sm font-semibold bg-primary hover:bg-primary/90 text-primary-foreground transition-all flex items-center gap-2 shadow-[0_0_15px_rgba(59,130,246,0.3)]"
+              >
+                <LayoutDashboard size={16} /> Dashboard
+              </Link>
+            ) : (
+              <Link href="/login" className="px-5 py-2.5 rounded-full text-sm font-semibold bg-white/5 hover:bg-white/10 border border-white/10 transition-all">
+                Login
+              </Link>
+            )}
           </div>
         </div>
       </nav>

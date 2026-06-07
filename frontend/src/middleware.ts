@@ -17,7 +17,8 @@ export function middleware(request: NextRequest) {
   }
 
   if (token) {
-    if (pathname === '/' || pathname === '/login') {
+    // Only redirect /login to dashboard — landing page '/' is always accessible
+    if (pathname === '/login') {
       if (userRole === 'ADMIN') {
         url.pathname = '/admin';
       } else {

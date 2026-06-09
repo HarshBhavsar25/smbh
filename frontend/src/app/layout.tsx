@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import InstallBanner from "@/components/InstallBanner";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -30,6 +31,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} dark antialiased`}>
       <body className="min-h-full bg-background text-foreground flex flex-col font-sans">
+        <InstallBanner />
         {children}
       </body>
     </html>

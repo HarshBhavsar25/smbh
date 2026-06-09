@@ -285,7 +285,7 @@ export default function LandingPage() {
                 </div>
                 <div>
                   <h4 className="font-semibold text-lg mb-1">Address</h4>
-                  <p className="text-muted-foreground text-sm">GRJF+7VJ, Lt Narayanrao Sahadurao, Kamble Path, Janwadi, Gokhalenagar, Pune, Maharashtra 411016</p>
+                  <p className="text-muted-foreground text-sm">299, Janawadi, Off Senapati Bapat Road, Pune – 411016</p>
                 </div>
               </div>
               <div className="flex items-start gap-4">

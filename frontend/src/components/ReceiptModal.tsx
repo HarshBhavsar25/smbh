@@ -39,13 +39,76 @@ export default function ReceiptModal({ isOpen, onClose, payment }: ReceiptModalP
   const txnDate = formatDate(payment.paymentDate);
   const receiptDate = formatDate(payment.paymentDate);
 
+  const sanitizeStylesheets = async () => {
+    const activeSheets: { element: HTMLStyleElement | HTMLLinkElement; disabled: boolean }[] = [];
+    const tempStyles: HTMLStyleElement[] = [];
+
+    const styleElements = Array.from(document.querySelectorAll("style, link[rel='stylesheet']"));
+
+    for (const sheetEl of styleElements) {
+      try {
+        if (sheetEl.tagName === "STYLE") {
+          const styleEl = sheetEl as HTMLStyleElement;
+          const content = styleEl.innerHTML;
+          if (content.includes("oklch") || content.includes("oklab")) {
+            styleEl.disabled = true;
+            activeSheets.push({ element: styleEl, disabled: false });
+
+            const cleanContent = content
+              .replace(/oklch\([^)]+\)/g, "rgb(0,0,0)")
+              .replace(/oklab\([^)]+\)/g, "rgb(0,0,0)");
+            
+            const tempStyle = document.createElement("style");
+            tempStyle.innerHTML = cleanContent;
+            document.head.appendChild(tempStyle);
+            tempStyles.push(tempStyle);
+          }
+        } else if (sheetEl.tagName === "LINK") {
+          const linkEl = sheetEl as HTMLLinkElement;
+          const response = await fetch(linkEl.href);
+          if (response.ok) {
+            const content = await response.text();
+            if (content.includes("oklch") || content.includes("oklab")) {
+              linkEl.disabled = true;
+              activeSheets.push({ element: linkEl, disabled: false });
+
+              const cleanContent = content
+                .replace(/oklch\([^)]+\)/g, "rgb(0,0,0)")
+                .replace(/oklab\([^)]+\)/g, "rgb(0,0,0)");
+
+              const tempStyle = document.createElement("style");
+              tempStyle.innerHTML = cleanContent;
+              document.head.appendChild(tempStyle);
+              tempStyles.push(tempStyle);
+            }
+          }
+        }
+      } catch (e) {
+        console.warn("Failed to sanitize stylesheet:", e);
+      }
+    }
+
+    return () => {
+      for (const item of activeSheets) {
+        item.element.disabled = item.disabled;
+      }
+      for (const tempStyle of tempStyles) {
+        tempStyle.remove();
+      }
+    };
+  };
+
   const handleDownload = async () => {
     setIsDownloading(true);
+    let restoreStyles: (() => void) | null = null;
     try {
       const element = document.getElementById("receipt-print-area");
       if (!element) {
         throw new Error("Print area element not found in DOM");
       }
+
+      // Temporarily sanitize oklch/oklab styles to prevent html2canvas crash
+      restoreStyles = await sanitizeStylesheets();
 
       // Capture the element visually using html2canvas
       const canvas = await html2canvas(element, {
@@ -56,6 +119,11 @@ export default function ReceiptModal({ isOpen, onClose, payment }: ReceiptModalP
         windowWidth: 850,
         windowHeight: 580,
       });
+
+      if (restoreStyles) {
+        restoreStyles();
+        restoreStyles = null;
+      }
 
       const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF({
@@ -74,6 +142,9 @@ export default function ReceiptModal({ isOpen, onClose, payment }: ReceiptModalP
       console.error("PDF generation failed:", err);
       alert(`Failed to download receipt as PDF. Error: ${err.message || err}`);
     } finally {
+      if (restoreStyles) {
+        restoreStyles();
+      }
       setIsDownloading(false);
     }
   };

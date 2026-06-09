@@ -44,21 +44,20 @@ export default function ReceiptModal({ isOpen, onClose, payment }: ReceiptModalP
     try {
       const element = document.getElementById("receipt-print-area");
       if (!element) {
-        throw new Error("Print area element not found");
+        throw new Error("Print area element not found in DOM");
       }
 
       // Capture the element visually using html2canvas
       const canvas = await html2canvas(element, {
-        scale: 2.5, // High resolution scale
+        scale: 2.0, // Stable scale factor
         useCORS: true,
-        allowTaint: true,
         logging: false,
         backgroundColor: "#ffffff",
-        windowWidth: 850, // Force consistent standard width for render layout
+        windowWidth: 850,
         windowHeight: 580,
       });
 
-      const imgData = canvas.toDataURL("image/jpeg", 0.95);
+      const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF({
         orientation: "landscape",
         unit: "mm",
@@ -69,11 +68,11 @@ export default function ReceiptModal({ isOpen, onClose, payment }: ReceiptModalP
       const pdfHeight = 210; // A4 landscape height
 
       // Render image to fill the page
-      pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight);
+      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
       pdf.save(`Receipt_SMBH_${utr !== "N/A" ? utr : payment.id.slice(0, 8)}.pdf`);
-    } catch (err) {
+    } catch (err: any) {
       console.error("PDF generation failed:", err);
-      alert("Failed to download receipt as PDF. Please try again.");
+      alert(`Failed to download receipt as PDF. Error: ${err.message || err}`);
     } finally {
       setIsDownloading(false);
     }

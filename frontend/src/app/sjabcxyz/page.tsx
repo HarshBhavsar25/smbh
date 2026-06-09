@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   Check, X, WifiOff, Loader2, Search, CheckCircle2, AlertTriangle, ShieldCheck 
 } from "lucide-react";
+import InstallAppButton from "@/components/InstallAppButton";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -16,6 +17,16 @@ export default function StaffAttendancePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  
+  // Swap manifest to attendance-specific one so "Install App" installs /sjabcxyz
+  useEffect(() => {
+    const existing = document.querySelector('link[rel="manifest"]');
+    const prev = existing?.getAttribute("href") ?? "/manifest.json";
+    if (existing) existing.setAttribute("href", "/manifest-attendance.json");
+    return () => {
+      if (existing) existing.setAttribute("href", prev);
+    };
+  }, []);
   
   // Offline and Error states
   const [isOfflineError, setIsOfflineError] = useState(false);
@@ -208,7 +219,8 @@ export default function StaffAttendancePage() {
               <p className="text-[10px] text-primary font-bold uppercase tracking-wider">माऊली उपस्थिती</p>
             </div>
           </div>
-          <div className="text-right">
+          <div className="flex items-center gap-2">
+            <InstallAppButton appName="Mauli Attendance" className="!text-[10px] !px-2.5 !py-1" />
             <span className="text-[11px] text-muted-foreground font-semibold">
               {new Date().toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" })}
             </span>

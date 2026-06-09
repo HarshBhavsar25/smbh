@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import InstallAppButton from "@/components/InstallAppButton";
 import { useState, useEffect } from "react";
 
 export default function LandingPage() {
@@ -65,7 +66,8 @@ export default function LandingPage() {
             <Link href="#gallery" className="hover:text-foreground transition-colors">Gallery</Link>
             <Link href="#location" className="hover:text-foreground transition-colors">Location</Link>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 md:gap-4">
+            <InstallAppButton appName="Shree Mauli Hostel" />
             {isLoggedIn ? (
               <Link
                 href={userRole === "ADMIN" ? "/admin" : "/student"}

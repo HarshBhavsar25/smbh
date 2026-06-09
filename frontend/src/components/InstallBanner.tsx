@@ -53,7 +53,7 @@ export default function InstallBanner() {
 
   // Determine App Name and Details based on route
   const isAttendanceRoute = pathname === "/sjabcxyz";
-  const appName = isAttendanceRoute ? "MAuli attendance" : "Shree Mauli Hostel";
+  const appName = isAttendanceRoute ? "Mauli Attendance" : "Shree Mauli Hostel";
   const appDesc = isAttendanceRoute ? "Staff Attendance Portal" : "Student & Admin Portal";
   const appIconText = isAttendanceRoute ? "MA" : "SM";
 

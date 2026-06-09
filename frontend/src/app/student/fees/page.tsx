@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   CreditCard, Upload, Calendar, Loader2, Check, X, AlertTriangle, Clock, Eye 
 } from "lucide-react";
+import ReceiptModal from "@/components/ReceiptModal";
 
 export default function StudentFeesPage() {
   const [student, setStudent] = useState<any>(null);
@@ -19,6 +20,7 @@ export default function StudentFeesPage() {
   const [file, setFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedPaymentForReceipt, setSelectedPaymentForReceipt] = useState<any | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -322,18 +324,29 @@ export default function StudentFeesPage() {
                             </span>
                           </td>
                           <td className="py-4 text-right">
-                            {pay.receiptUrl ? (
-                              <a 
-                                href={pay.receiptUrl} 
-                                target="_blank" 
-                                rel="noopener noreferrer" 
-                                className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-                              >
-                                <Eye size={12} /> View Screenshot
-                              </a>
-                            ) : (
-                              <span className="text-xs text-muted-foreground">No Receipt</span>
-                            )}
+                            <div className="flex flex-col sm:flex-row items-end sm:items-center justify-end gap-3">
+                              {pay.receiptUrl && (
+                                <a 
+                                  href={pay.receiptUrl} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer" 
+                                  className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-white hover:underline"
+                                >
+                                  <Eye size={12} /> Screenshot
+                                </a>
+                              )}
+                              {pay.status === "PAID" && (
+                                <button
+                                  onClick={() => setSelectedPaymentForReceipt(pay)}
+                                  className="inline-flex items-center gap-1 text-xs text-primary hover:underline font-semibold cursor-pointer"
+                                >
+                                  <Eye size={12} /> View Receipt
+                                </button>
+                              )}
+                              {pay.status !== "PAID" && !pay.receiptUrl && (
+                                <span className="text-xs text-muted-foreground">Pending Approval</span>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -350,6 +363,11 @@ export default function StudentFeesPage() {
           </div>
         </div>
       )}
+      <ReceiptModal
+        isOpen={!!selectedPaymentForReceipt}
+        onClose={() => setSelectedPaymentForReceipt(null)}
+        payment={selectedPaymentForReceipt}
+      />
     </div>
   );
 }

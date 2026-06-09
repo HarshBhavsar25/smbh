@@ -17,6 +17,7 @@ import { RulesController } from './rules/rules.controller';
 import { LeaveRequestsController } from './leaves/leaves.controller';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { AttendanceModule } from './attendance/attendance.module';
 
 @Module({
   imports: [
@@ -33,7 +34,8 @@ import { NotificationsModule } from './notifications/notifications.module';
     GalleryModule, 
     IntegrationsModule,
     CloudinaryModule,
-    NotificationsModule
+    NotificationsModule,
+    AttendanceModule
   ],
   controllers: [AppController, RulesController, LeaveRequestsController],
   providers: [AppService],

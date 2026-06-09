@@ -93,6 +93,7 @@ model StudentProfile {
   comments      ComplaintComment[]
   vacations     VacationRequest[]
   leaveRequests LeaveRequest[]
+  attendanceRecords AttendanceRecord[]
 }
 
 model Room {
@@ -242,4 +243,26 @@ model Rule {
   content   String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Attendance {
+  id          String             @id @default(uuid())
+  date        DateTime           @default(now())
+  takenBy     String?
+  records     AttendanceRecord[]
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+}
+
+model AttendanceRecord {
+  id           String         @id @default(uuid())
+  attendanceId String
+  attendance   Attendance     @relation(fields: [attendanceId], references: [id], onDelete: Cascade)
+  studentId    String
+  student      StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  status       String         // "PRESENT" or "ABSENT"
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@unique([attendanceId, studentId])
 }

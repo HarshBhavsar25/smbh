@@ -1,9 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class FeesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notificationsService: NotificationsService
+  ) {}
 
   async create(data: any) {
     const status = data.status || 'PENDING';
@@ -64,6 +68,7 @@ export class FeesService {
   async approve(id: string) {
     const payment = await this.prisma.feePayment.findUnique({
       where: { id },
+      include: { student: true }
     });
     if (!payment) throw new NotFoundException('Fee record not found');
 
@@ -76,6 +81,14 @@ export class FeesService {
       where: { id: payment.studentId },
       data: { feeStatus: 'PAID' },
     });
+
+    if (payment.student && payment.student.userId) {
+      await this.notificationsService.notifyUser(
+        payment.student.userId,
+        'Fee Payment Approved',
+        `Your fee payment of ₹${payment.amount} has been approved. You can now view and download your receipt.`
+      );
+    }
 
     return updatedPayment;
   }

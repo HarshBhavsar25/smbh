@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   CreditCard, Plus, Trash2, Calendar, Users, Loader2, X, AlertTriangle, Check, Search, Eye, Filter 
 } from "lucide-react";
+import ReceiptModal from "@/components/ReceiptModal";
 
 export default function FeesAdminPage() {
   const [payments, setPayments] = useState<any[]>([]);
@@ -19,6 +20,7 @@ export default function FeesAdminPage() {
   const [statusFilter, setStatusFilter] = useState("ALL"); // ALL, PENDING, PAID, REJECTED
   const [timeFilter, setTimeFilter] = useState("ALL_TIME"); // ALL_TIME, THIS_MONTH, THIS_YEAR
   const [viewScreenshotUrl, setViewScreenshotUrl] = useState<string | null>(null);
+  const [selectedPaymentForReceipt, setSelectedPaymentForReceipt] = useState<any | null>(null);
 
   const [formData, setFormData] = useState({
     studentId: "",
@@ -418,6 +420,15 @@ export default function FeesAdminPage() {
                           <Eye size={16} /> Screenshot
                         </button>
                       )}
+                      {pay.status === "PAID" && (
+                        <button
+                          onClick={() => setSelectedPaymentForReceipt(pay)}
+                          className="p-2 hover:bg-white/5 rounded-lg text-emerald-500 hover:text-emerald-400 transition-colors inline-flex items-center gap-1 text-xs cursor-pointer"
+                          title="View Receipt"
+                        >
+                          <Eye size={16} /> Receipt
+                        </button>
+                      )}
                       {pay.status === "PENDING" && (
                         <>
                           <button
@@ -630,6 +641,11 @@ export default function FeesAdminPage() {
           </div>
         )}
       </AnimatePresence>
+      <ReceiptModal
+        isOpen={!!selectedPaymentForReceipt}
+        onClose={() => setSelectedPaymentForReceipt(null)}
+        payment={selectedPaymentForReceipt}
+      />
     </div>
   );
 }

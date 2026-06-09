@@ -40,20 +40,36 @@ export default function ReceiptModal({ isOpen, onClose, payment }: ReceiptModalP
   const receiptDate = formatDate(payment.paymentDate);
 
   const sanitizeStylesheets = async () => {
-    const activeSheets: { element: HTMLStyleElement | HTMLLinkElement; disabled: boolean }[] = [];
+    const originalSheets: { element: HTMLElement; parent: Node; nextSibling: Node | null }[] = [];
     const tempStyles: HTMLStyleElement[] = [];
 
     const styleElements = Array.from(document.querySelectorAll("style, link[rel='stylesheet']"));
 
     for (const sheetEl of styleElements) {
       try {
+        let content = "";
         if (sheetEl.tagName === "STYLE") {
-          const styleEl = sheetEl as HTMLStyleElement;
-          const content = styleEl.innerHTML;
-          if (content.includes("oklch") || content.includes("oklab")) {
-            styleEl.disabled = true;
-            activeSheets.push({ element: styleEl, disabled: false });
+          content = (sheetEl as HTMLStyleElement).innerHTML;
+        } else if (sheetEl.tagName === "LINK") {
+          const response = await fetch((sheetEl as HTMLLinkElement).href);
+          if (response.ok) {
+            content = await response.text();
+          }
+        }
 
+        if (content && (content.includes("oklch") || content.includes("oklab"))) {
+          const parent = sheetEl.parentNode;
+          if (parent) {
+            originalSheets.push({
+              element: sheetEl as HTMLElement,
+              parent,
+              nextSibling: sheetEl.nextSibling,
+            });
+
+            // Remove original stylesheet from DOM completely so document.styleSheets won't contain it
+            sheetEl.remove();
+
+            // Replace with sanitized stylesheet content
             const cleanContent = content
               .replace(/oklch\([^)]+\)/g, "rgb(0,0,0)")
               .replace(/oklab\([^)]+\)/g, "rgb(0,0,0)");
@@ -63,25 +79,6 @@ export default function ReceiptModal({ isOpen, onClose, payment }: ReceiptModalP
             document.head.appendChild(tempStyle);
             tempStyles.push(tempStyle);
           }
-        } else if (sheetEl.tagName === "LINK") {
-          const linkEl = sheetEl as HTMLLinkElement;
-          const response = await fetch(linkEl.href);
-          if (response.ok) {
-            const content = await response.text();
-            if (content.includes("oklch") || content.includes("oklab")) {
-              linkEl.disabled = true;
-              activeSheets.push({ element: linkEl, disabled: false });
-
-              const cleanContent = content
-                .replace(/oklch\([^)]+\)/g, "rgb(0,0,0)")
-                .replace(/oklab\([^)]+\)/g, "rgb(0,0,0)");
-
-              const tempStyle = document.createElement("style");
-              tempStyle.innerHTML = cleanContent;
-              document.head.appendChild(tempStyle);
-              tempStyles.push(tempStyle);
-            }
-          }
         }
       } catch (e) {
         console.warn("Failed to sanitize stylesheet:", e);
@@ -89,11 +86,13 @@ export default function ReceiptModal({ isOpen, onClose, payment }: ReceiptModalP
     }
 
     return () => {
-      for (const item of activeSheets) {
-        item.element.disabled = item.disabled;
-      }
+      // Remove temporary styles
       for (const tempStyle of tempStyles) {
         tempStyle.remove();
+      }
+      // Restore original stylesheet elements in correct order
+      for (const item of originalSheets) {
+        item.parent.insertBefore(item.element, item.nextSibling);
       }
     };
   };

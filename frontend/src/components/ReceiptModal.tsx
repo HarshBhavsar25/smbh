@@ -27,9 +27,14 @@ export default function ReceiptModal({ isOpen, onClose, payment }: ReceiptModalP
     return new Date(dateStr).toLocaleDateString("en-IN", { month: "long", year: "numeric" });
   };
 
+  const getPreviousMonthName = (dateStr: string) => {
+    if (!dateStr) return "----";
+    const d = new Date(dateStr);
+    d.setMonth(d.getMonth() - 1);
+    return d.toLocaleDateString("en-IN", { month: "long", year: "numeric" });
+  };
+
   const isDeposit = payment.amount === 10000;
-  const feeType = isDeposit ? "Hostel Deposit" : "Hostel Rent";
-  const feeMonth = isDeposit ? "----" : getMonthName(payment.paymentDate);
   const academicYear = payment.student?.academicYear || "2025-26";
   const receiptNo = `SMBH/${isDeposit ? "deposit" : "rent"}-${payment.id.slice(0, 5).toUpperCase()}/${academicYear}`;
   const studentName = payment.student?.fullName || "N/A";
@@ -38,6 +43,44 @@ export default function ReceiptModal({ isOpen, onClose, payment }: ReceiptModalP
   const utr = payment.utr || "N/A";
   const txnDate = formatDate(payment.paymentDate);
   const receiptDate = formatDate(payment.paymentDate);
+  const admissionDate = payment.student?.admissionDate ? formatDate(payment.student.admissionDate) : "N/A";
+
+  // Split payment details into rows
+  interface FeeRow {
+    type: string;
+    month: string;
+    amount: number;
+  }
+
+  const feeRows: FeeRow[] = [];
+  if (isDeposit) {
+    feeRows.push({
+      type: "Hostel Deposit",
+      month: "----",
+      amount: payment.amount,
+    });
+  } else {
+    if (payment.amount >= 5000) {
+      feeRows.push({
+        type: "Hostel Rent",
+        month: getMonthName(payment.paymentDate),
+        amount: 5000,
+      });
+      if (payment.amount > 5000) {
+        feeRows.push({
+          type: "Electricity Bill",
+          month: getPreviousMonthName(payment.paymentDate),
+          amount: payment.amount - 5000,
+        });
+      }
+    } else {
+      feeRows.push({
+        type: "Hostel Rent (Partial)",
+        month: getMonthName(payment.paymentDate),
+        amount: payment.amount,
+      });
+    }
+  }
 
   const handleDownload = async () => {
     setIsDownloading(true);
@@ -47,8 +90,7 @@ export default function ReceiptModal({ isOpen, onClose, payment }: ReceiptModalP
         throw new Error("Print area element not found in DOM");
       }
 
-      // Convert HTML element to a high-resolution PNG using browser's native SVG renderer.
-      // This completely bypasses the oklab/oklch parser crashes of html2canvas.
+      // Convert HTML element to a high-resolution PNG using browser's native SVG renderer
       const imgData = await toPng(element, {
         pixelRatio: 2.0, // Scale for crisp PDF text
         backgroundColor: "#ffffff",
@@ -145,8 +187,8 @@ export default function ReceiptModal({ isOpen, onClose, payment }: ReceiptModalP
                   <span className="border-b border-dotted border-black/40 flex-1 uppercase">{course}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="font-bold whitespace-nowrap">Year of Admission :-</span>
-                  <span className="border-b border-dotted border-black/40 flex-1">{academicYear}</span>
+                  <span className="font-bold whitespace-nowrap">Date of Admission :-</span>
+                  <span className="border-b border-dotted border-black/40 flex-1">{admissionDate}</span>
                 </div>
               </div>
 
@@ -166,11 +208,13 @@ export default function ReceiptModal({ isOpen, onClose, payment }: ReceiptModalP
                   </tr>
                 </thead>
                 <tbody>
-                  <tr>
-                    <td className="border-r border-black py-3">{feeType}</td>
-                    <td className="border-r border-black py-3">{feeMonth}</td>
-                    <td className="py-3 font-bold">{payment.amount}</td>
-                  </tr>
+                  {feeRows.map((row, index) => (
+                    <tr key={index} className={index < feeRows.length - 1 ? "border-b border-black" : ""}>
+                      <td className="border-r border-black py-3">{row.type}</td>
+                      <td className="border-r border-black py-3">{row.month}</td>
+                      <td className="py-3 font-bold">{row.amount}</td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
 

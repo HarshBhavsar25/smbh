@@ -77,39 +77,33 @@ export default function StaffAttendancePage() {
     }
   };
 
+  // Translate a single word via Google Input Tools (phonetic, lowercase input)
+  const translateWord = async (word: string): Promise<string> => {
+    try {
+      const res = await fetch(
+        `https://inputtools.google.com/request?text=${encodeURIComponent(word.toLowerCase())}&itc=mr-t-i0-und&num=5&cp=0&cs=1`
+      );
+      if (!res.ok) return word;
+      const data = await res.json();
+      // Response: ["SUCCESS", [["input", ["cand1","cand2",...], ...]], ...]
+      if (data[0] === "SUCCESS" && data[1]?.[0]?.[1]?.[0]) {
+        return data[1][0][1][0]; // best candidate for this single word
+      }
+    } catch (_) { /* ignore */ }
+    return word; // fallback to English
+  };
+
   const translateNames = async (studentList: any[]) => {
     const newTranslations: Record<string, string> = {};
-    
-    // Process translations in batches or sequentially
     for (const student of studentList) {
-      const name = student.fullName;
-      try {
-        const res = await fetch(
-          `https://inputtools.google.com/request?text=${encodeURIComponent(name)}&itc=mr-t-i0-und&num=1`
-        );
-        if (res.ok) {
-          const data = await res.json();
-          if (data[0] === "SUCCESS" && data[1] && data[1].length > 0) {
-            const marathiWords = data[1].map((item: any) => {
-              if (item && item[1] && item[1].length > 0) {
-                return item[1][0]; // First transliterated candidate
-              }
-              return item[0];
-            });
-            newTranslations[student.id] = marathiWords.join(" ");
-          } else {
-            newTranslations[student.id] = name;
-          }
-        } else {
-          newTranslations[student.id] = name;
-        }
-      } catch (err) {
-        newTranslations[student.id] = name; // Fallback to English name
-      }
+      // Split full name into individual words and translate each one separately
+      const words: string[] = student.fullName.trim().split(/\s+/).filter(Boolean);
+      const translated = await Promise.all(words.map(translateWord));
+      newTranslations[student.id] = translated.join(" ");
     }
-
     setTranslations((prev) => ({ ...prev, ...newTranslations }));
   };
+
 
   const handleToggle = (studentId: string, status: "PRESENT" | "ABSENT") => {
     setAttendance((prev) => ({ ...prev, [studentId]: status }));

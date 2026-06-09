@@ -2,7 +2,7 @@
 
 import { X, Download, Loader2 } from "lucide-react";
 import { useState } from "react";
-import html2canvas from "html2canvas";
+import { toPng } from "html-to-image";
 import { jsPDF } from "jspdf";
 
 interface ReceiptModalProps {
@@ -39,168 +39,22 @@ export default function ReceiptModal({ isOpen, onClose, payment }: ReceiptModalP
   const txnDate = formatDate(payment.paymentDate);
   const receiptDate = formatDate(payment.paymentDate);
 
-  const sanitizeStylesheets = async () => {
-    const originalSheets: { element: HTMLElement; parent: Node; nextSibling: Node | null }[] = [];
-    const tempStyles: HTMLStyleElement[] = [];
-    let originalAdopted: CSSStyleSheet[] = [];
-
-    // Store original inline styles on html and body elements
-    const docStyleAttr = document.documentElement.getAttribute("style") || "";
-    const bodyStyleAttr = document.body.getAttribute("style") || "";
-
-    // Temporarily strip oklch/oklab from inline styles of document/body
-    if (docStyleAttr.includes("oklch") || docStyleAttr.includes("oklab")) {
-      document.documentElement.setAttribute(
-        "style",
-        docStyleAttr.replace(/oklch\([^)]+\)/g, "rgb(0,0,0)").replace(/oklab\([^)]+\)/g, "rgb(0,0,0)")
-      );
-    }
-    if (bodyStyleAttr.includes("oklch") || bodyStyleAttr.includes("oklab")) {
-      document.body.setAttribute(
-        "style",
-        bodyStyleAttr.replace(/oklch\([^)]+\)/g, "rgb(0,0,0)").replace(/oklab\([^)]+\)/g, "rgb(0,0,0)")
-      );
-    }
-
-    // Handle adoptedStyleSheets (used by Tailwind v4 / CSSOM)
-    if (document.adoptedStyleSheets) {
-      originalAdopted = Array.from(document.adoptedStyleSheets);
-      const cleanAdopted: CSSStyleSheet[] = [];
-      
-      for (const sheet of originalAdopted) {
-        try {
-          const cssText = Array.from(sheet.cssRules).map(r => r.cssText).join("\n");
-          if (cssText.includes("oklch") || cssText.includes("oklab")) {
-            const cleanContent = cssText
-              .replace(/oklch\([^)]+\)/g, "rgb(0,0,0)")
-              .replace(/oklab\([^)]+\)/g, "rgb(0,0,0)");
-            
-            const tempStyle = document.createElement("style");
-            tempStyle.innerHTML = cleanContent;
-            document.head.appendChild(tempStyle);
-            tempStyles.push(tempStyle);
-          } else {
-            cleanAdopted.push(sheet);
-          }
-        } catch (e) {
-          cleanAdopted.push(sheet);
-        }
-      }
-      document.adoptedStyleSheets = cleanAdopted;
-    }
-
-    // Handle standard stylesheets (both static tags and dynamic CSSOM rules)
-    const sheets = Array.from(document.styleSheets);
-    for (const sheet of sheets) {
-      try {
-        const ownerNode = sheet.ownerNode as HTMLElement;
-        if (!ownerNode) continue;
-
-        let content = "";
-        
-        // Try serializing rules first (handles CSSOM-inserted rules)
-        try {
-          if (sheet.cssRules) {
-            content = Array.from(sheet.cssRules).map(r => r.cssText).join("\n");
-          }
-        } catch (_) {}
-
-        // Fallback to HTML content (if CSSOM rules are protected or blocked by CORS)
-        if (!content) {
-          if (ownerNode.tagName === "STYLE") {
-            content = (ownerNode as HTMLStyleElement).innerHTML;
-          } else if (ownerNode.tagName === "LINK") {
-            const response = await fetch((ownerNode as HTMLLinkElement).href);
-            if (response.ok) {
-              content = await response.text();
-            }
-          }
-        }
-
-        if (content && (content.includes("oklch") || content.includes("oklab"))) {
-          const parent = ownerNode.parentNode;
-          if (parent) {
-            originalSheets.push({
-              element: ownerNode,
-              parent,
-              nextSibling: ownerNode.nextSibling,
-            });
-
-            // Remove original stylesheet node from DOM
-            ownerNode.remove();
-
-            // Replace with sanitized style tag
-            const cleanContent = content
-              .replace(/oklch\([^)]+\)/g, "rgb(0,0,0)")
-              .replace(/oklab\([^)]+\)/g, "rgb(0,0,0)");
-            
-            const tempStyle = document.createElement("style");
-            tempStyle.innerHTML = cleanContent;
-            document.head.appendChild(tempStyle);
-            tempStyles.push(tempStyle);
-          }
-        }
-      } catch (e) {
-        console.warn("Failed to sanitize stylesheet:", e);
-      }
-    }
-
-    return () => {
-      // Restore inline style attributes
-      if (docStyleAttr) {
-        document.documentElement.setAttribute("style", docStyleAttr);
-      } else {
-        document.documentElement.removeAttribute("style");
-      }
-      if (bodyStyleAttr) {
-        document.body.setAttribute("style", bodyStyleAttr);
-      } else {
-        document.body.removeAttribute("style");
-      }
-
-      // Restore adopted stylesheets
-      if (document.adoptedStyleSheets) {
-        document.adoptedStyleSheets = originalAdopted;
-      }
-      // Remove temporary styles
-      for (const tempStyle of tempStyles) {
-        tempStyle.remove();
-      }
-      // Restore original standard stylesheets
-      for (const item of originalSheets) {
-        item.parent.insertBefore(item.element, item.nextSibling);
-      }
-    };
-  };
-
   const handleDownload = async () => {
     setIsDownloading(true);
-    let restoreStyles: (() => void) | null = null;
     try {
       const element = document.getElementById("receipt-print-area");
       if (!element) {
         throw new Error("Print area element not found in DOM");
       }
 
-      // Temporarily sanitize oklch/oklab styles to prevent html2canvas crash
-      restoreStyles = await sanitizeStylesheets();
-
-      // Capture the element visually using html2canvas
-      const canvas = await html2canvas(element, {
-        scale: 2.0, // Stable scale factor
-        useCORS: true,
-        logging: false,
+      // Convert HTML element to a high-resolution PNG using browser's native SVG renderer.
+      // This completely bypasses the oklab/oklch parser crashes of html2canvas.
+      const imgData = await toPng(element, {
+        pixelRatio: 2.0, // Scale for crisp PDF text
         backgroundColor: "#ffffff",
-        windowWidth: 850,
-        windowHeight: 580,
+        cacheBust: true,
       });
 
-      if (restoreStyles) {
-        restoreStyles();
-        restoreStyles = null;
-      }
-
-      const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF({
         orientation: "landscape",
         unit: "mm",
@@ -217,20 +71,17 @@ export default function ReceiptModal({ isOpen, onClose, payment }: ReceiptModalP
       console.error("PDF generation failed:", err);
       alert(`Failed to download receipt as PDF. Error: ${err.message || err}`);
     } finally {
-      if (restoreStyles) {
-        restoreStyles();
-      }
       setIsDownloading(false);
     }
   };
 
   return (
-    // Fullscreen overlay — scrollable, starts below fixed navbar (mt-20)
+    // Fullscreen overlay — scrollable, starts below fixed navbar (mt-24)
     <div
       className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm overflow-y-auto"
       onClick={onClose}
     >
-      {/* Card — anchored at top to avoid being obscured by mobile keyboards/viewports */}
+      {/* Card — anchored at top to avoid being obscured by mobile viewports */}
       <div
         className="relative mx-auto mt-24 mb-12 max-w-4xl w-full bg-[#121214] border border-white/10 rounded-3xl shadow-2xl p-5 flex flex-col"
         onClick={(e) => e.stopPropagation()}

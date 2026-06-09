@@ -280,79 +280,142 @@ export default function StudentFeesPage() {
 
           {/* Payment History */}
           <div className="lg:col-span-2 space-y-6">
-            <div className="glass-card p-6 rounded-3xl border border-white/5 bg-[#121214]">
+            <div className="glass-card p-4 sm:p-6 rounded-3xl border border-white/5 bg-[#121214]">
               <h3 className="text-lg font-bold text-white mb-6">Payment History</h3>
               
               {payments.length > 0 ? (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="border-b border-white/5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                        <th className="pb-4">Date</th>
-                        <th className="pb-4">UTR / Ref</th>
-                        <th className="pb-4">Amount</th>
-                        <th className="pb-4">Status</th>
-                        <th className="pb-4 text-right">Receipt</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-white/5 text-sm">
-                      {payments.map((pay) => (
-                        <tr key={pay.id} className="hover:bg-white/5 transition-colors">
-                          <td className="py-4 pr-4">
-                            <div className="flex items-center gap-2 text-white font-medium">
-                              <Calendar size={14} className="text-muted-foreground" />
-                              {new Date(pay.paymentDate).toLocaleDateString("en-IN", {
-                                day: "2-digit",
-                                month: "short",
-                                year: "numeric"
-                              })}
-                            </div>
-                          </td>
-                          <td className="py-4 pr-4">
-                            <code className="text-xs text-white/80 bg-white/5 px-2 py-1 rounded">{pay.utr || "N/A"}</code>
-                          </td>
-                          <td className="py-4 pr-4 font-bold text-white">
-                            ₹{pay.amount.toLocaleString("en-IN")}
-                          </td>
-                          <td className="py-4 pr-4">
-                            <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                              pay.status === "PAID" ? "bg-emerald-500/10 text-emerald-500" :
-                              pay.status === "REJECTED" ? "bg-red-500/10 text-red-500" :
-                              "bg-amber-500/10 text-amber-500"
-                            }`}>
-                              {pay.status}
-                            </span>
-                          </td>
-                          <td className="py-4 text-right">
-                            <div className="flex flex-col sm:flex-row items-end sm:items-center justify-end gap-3">
-                              {pay.receiptUrl && (
-                                <a 
-                                  href={pay.receiptUrl} 
-                                  target="_blank" 
-                                  rel="noopener noreferrer" 
-                                  className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-white hover:underline"
-                                >
-                                  <Eye size={12} /> Screenshot
-                                </a>
-                              )}
-                              {pay.status === "PAID" && (
-                                <button
-                                  onClick={() => setSelectedPaymentForReceipt(pay)}
-                                  className="inline-flex items-center gap-1 text-xs text-primary hover:underline font-semibold cursor-pointer"
-                                >
-                                  <Eye size={12} /> View Receipt
-                                </button>
-                              )}
-                              {pay.status !== "PAID" && !pay.receiptUrl && (
-                                <span className="text-xs text-muted-foreground">Pending Approval</span>
-                              )}
-                            </div>
-                          </td>
+                <>
+                  {/* Desktop Table View (md and up) */}
+                  <div className="hidden md:block overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="border-b border-white/5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                          <th className="pb-4">Date</th>
+                          <th className="pb-4">UTR / Ref</th>
+                          <th className="pb-4">Amount</th>
+                          <th className="pb-4">Status</th>
+                          <th className="pb-4 text-right">Receipt</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody className="divide-y divide-white/5 text-sm">
+                        {payments.map((pay) => (
+                          <tr key={pay.id} className="hover:bg-white/5 transition-colors">
+                            <td className="py-4 pr-4">
+                              <div className="flex items-center gap-2 text-white font-medium">
+                                <Calendar size={14} className="text-muted-foreground" />
+                                {new Date(pay.paymentDate).toLocaleDateString("en-IN", {
+                                  day: "2-digit",
+                                  month: "short",
+                                  year: "numeric"
+                                })}
+                              </div>
+                            </td>
+                            <td className="py-4 pr-4">
+                              <code className="text-xs text-white/80 bg-white/5 px-2 py-1 rounded">{pay.utr || "N/A"}</code>
+                            </td>
+                            <td className="py-4 pr-4 font-bold text-white">
+                              ₹{pay.amount.toLocaleString("en-IN")}
+                            </td>
+                            <td className="py-4 pr-4">
+                              <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                                pay.status === "PAID" ? "bg-emerald-500/10 text-emerald-500" :
+                                pay.status === "REJECTED" ? "bg-red-500/10 text-red-500" :
+                                "bg-amber-500/10 text-amber-500"
+                              }`}>
+                                {pay.status}
+                              </span>
+                            </td>
+                            <td className="py-4 text-right">
+                              <div className="flex flex-col sm:flex-row items-end sm:items-center justify-end gap-3">
+                                {pay.receiptUrl && (
+                                  <a 
+                                    href={pay.receiptUrl} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer" 
+                                    className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-white hover:underline"
+                                  >
+                                    <Eye size={12} /> Screenshot
+                                  </a>
+                                )}
+                                {pay.status === "PAID" && (
+                                  <button
+                                    onClick={() => setSelectedPaymentForReceipt(pay)}
+                                    className="inline-flex items-center gap-1 text-xs text-primary hover:underline font-semibold cursor-pointer"
+                                  >
+                                    <Eye size={12} /> View Receipt
+                                  </button>
+                                )}
+                                {pay.status !== "PAID" && !pay.receiptUrl && (
+                                  <span className="text-xs text-muted-foreground">Pending Approval</span>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Mobile Card View (below md) */}
+                  <div className="md:hidden space-y-4">
+                    {payments.map((pay) => (
+                      <div key={pay.id} className="p-4 rounded-2xl bg-[#16161a] border border-white/5 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <Calendar size={12} />
+                            {new Date(pay.paymentDate).toLocaleDateString("en-IN", {
+                              day: "2-digit",
+                              month: "short",
+                              year: "numeric"
+                            })}
+                          </div>
+                          <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                            pay.status === "PAID" ? "bg-emerald-500/10 text-emerald-500" :
+                            pay.status === "REJECTED" ? "bg-red-500/10 text-red-500" :
+                            "bg-amber-500/10 text-amber-500"
+                          }`}>
+                            {pay.status}
+                          </span>
+                        </div>
+                        
+                        <div className="flex justify-between items-baseline gap-2">
+                          <div>
+                            <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">UTR / Ref</p>
+                            <code className="text-xs text-white/80 bg-white/5 px-2 py-0.5 rounded block w-fit mt-1 break-all">{pay.utr || "N/A"}</code>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Amount</p>
+                            <p className="text-sm font-bold text-white mt-1">₹{pay.amount.toLocaleString("en-IN")}</p>
+                          </div>
+                        </div>
+
+                        <div className="pt-3 border-t border-white/5 flex items-center justify-end gap-4">
+                          {pay.receiptUrl && (
+                            <a 
+                              href={pay.receiptUrl} 
+                              target="_blank" 
+                              rel="noopener noreferrer" 
+                              className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-white hover:underline"
+                            >
+                              <Eye size={12} /> Screenshot
+                            </a>
+                          )}
+                          {pay.status === "PAID" && (
+                            <button
+                              onClick={() => setSelectedPaymentForReceipt(pay)}
+                              className="inline-flex items-center gap-1 text-xs text-primary hover:underline font-semibold cursor-pointer"
+                            >
+                              <Eye size={12} /> View Receipt
+                            </button>
+                          )}
+                          {pay.status !== "PAID" && !pay.receiptUrl && (
+                            <span className="text-xs text-muted-foreground">Pending Approval</span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
               ) : (
                 <div className="text-center py-12">
                   <CreditCard className="w-12 h-12 text-white/10 mx-auto mb-4" />

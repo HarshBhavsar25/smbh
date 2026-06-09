@@ -42,34 +42,94 @@ export default function ReceiptModal({ isOpen, onClose, payment }: ReceiptModalP
   const sanitizeStylesheets = async () => {
     const originalSheets: { element: HTMLElement; parent: Node; nextSibling: Node | null }[] = [];
     const tempStyles: HTMLStyleElement[] = [];
+    let originalAdopted: CSSStyleSheet[] = [];
 
-    const styleElements = Array.from(document.querySelectorAll("style, link[rel='stylesheet']"));
+    // Store original inline styles on html and body elements
+    const docStyleAttr = document.documentElement.getAttribute("style") || "";
+    const bodyStyleAttr = document.body.getAttribute("style") || "";
 
-    for (const sheetEl of styleElements) {
+    // Temporarily strip oklch/oklab from inline styles of document/body
+    if (docStyleAttr.includes("oklch") || docStyleAttr.includes("oklab")) {
+      document.documentElement.setAttribute(
+        "style",
+        docStyleAttr.replace(/oklch\([^)]+\)/g, "rgb(0,0,0)").replace(/oklab\([^)]+\)/g, "rgb(0,0,0)")
+      );
+    }
+    if (bodyStyleAttr.includes("oklch") || bodyStyleAttr.includes("oklab")) {
+      document.body.setAttribute(
+        "style",
+        bodyStyleAttr.replace(/oklch\([^)]+\)/g, "rgb(0,0,0)").replace(/oklab\([^)]+\)/g, "rgb(0,0,0)")
+      );
+    }
+
+    // Handle adoptedStyleSheets (used by Tailwind v4 / CSSOM)
+    if (document.adoptedStyleSheets) {
+      originalAdopted = Array.from(document.adoptedStyleSheets);
+      const cleanAdopted: CSSStyleSheet[] = [];
+      
+      for (const sheet of originalAdopted) {
+        try {
+          const cssText = Array.from(sheet.cssRules).map(r => r.cssText).join("\n");
+          if (cssText.includes("oklch") || cssText.includes("oklab")) {
+            const cleanContent = cssText
+              .replace(/oklch\([^)]+\)/g, "rgb(0,0,0)")
+              .replace(/oklab\([^)]+\)/g, "rgb(0,0,0)");
+            
+            const tempStyle = document.createElement("style");
+            tempStyle.innerHTML = cleanContent;
+            document.head.appendChild(tempStyle);
+            tempStyles.push(tempStyle);
+          } else {
+            cleanAdopted.push(sheet);
+          }
+        } catch (e) {
+          cleanAdopted.push(sheet);
+        }
+      }
+      document.adoptedStyleSheets = cleanAdopted;
+    }
+
+    // Handle standard stylesheets (both static tags and dynamic CSSOM rules)
+    const sheets = Array.from(document.styleSheets);
+    for (const sheet of sheets) {
       try {
+        const ownerNode = sheet.ownerNode as HTMLElement;
+        if (!ownerNode) continue;
+
         let content = "";
-        if (sheetEl.tagName === "STYLE") {
-          content = (sheetEl as HTMLStyleElement).innerHTML;
-        } else if (sheetEl.tagName === "LINK") {
-          const response = await fetch((sheetEl as HTMLLinkElement).href);
-          if (response.ok) {
-            content = await response.text();
+        
+        // Try serializing rules first (handles CSSOM-inserted rules)
+        try {
+          if (sheet.cssRules) {
+            content = Array.from(sheet.cssRules).map(r => r.cssText).join("\n");
+          }
+        } catch (_) {}
+
+        // Fallback to HTML content (if CSSOM rules are protected or blocked by CORS)
+        if (!content) {
+          if (ownerNode.tagName === "STYLE") {
+            content = (ownerNode as HTMLStyleElement).innerHTML;
+          } else if (ownerNode.tagName === "LINK") {
+            const response = await fetch((ownerNode as HTMLLinkElement).href);
+            if (response.ok) {
+              content = await response.text();
+            }
           }
         }
 
         if (content && (content.includes("oklch") || content.includes("oklab"))) {
-          const parent = sheetEl.parentNode;
+          const parent = ownerNode.parentNode;
           if (parent) {
             originalSheets.push({
-              element: sheetEl as HTMLElement,
+              element: ownerNode,
               parent,
-              nextSibling: sheetEl.nextSibling,
+              nextSibling: ownerNode.nextSibling,
             });
 
-            // Remove original stylesheet from DOM completely so document.styleSheets won't contain it
-            sheetEl.remove();
+            // Remove original stylesheet node from DOM
+            ownerNode.remove();
 
-            // Replace with sanitized stylesheet content
+            // Replace with sanitized style tag
             const cleanContent = content
               .replace(/oklch\([^)]+\)/g, "rgb(0,0,0)")
               .replace(/oklab\([^)]+\)/g, "rgb(0,0,0)");
@@ -86,11 +146,27 @@ export default function ReceiptModal({ isOpen, onClose, payment }: ReceiptModalP
     }
 
     return () => {
+      // Restore inline style attributes
+      if (docStyleAttr) {
+        document.documentElement.setAttribute("style", docStyleAttr);
+      } else {
+        document.documentElement.removeAttribute("style");
+      }
+      if (bodyStyleAttr) {
+        document.body.setAttribute("style", bodyStyleAttr);
+      } else {
+        document.body.removeAttribute("style");
+      }
+
+      // Restore adopted stylesheets
+      if (document.adoptedStyleSheets) {
+        document.adoptedStyleSheets = originalAdopted;
+      }
       // Remove temporary styles
       for (const tempStyle of tempStyles) {
         tempStyle.remove();
       }
-      // Restore original stylesheet elements in correct order
+      // Restore original standard stylesheets
       for (const item of originalSheets) {
         item.parent.insertBefore(item.element, item.nextSibling);
       }

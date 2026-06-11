@@ -458,13 +458,15 @@ export default function StudentsAdminPage() {
                           <Eye size={16} />
                         </button>
                         {/* Edit Details */}
-                        <button
-                          title="Edit Details"
-                          onClick={() => openEditModal(student)}
-                          className="p-2 hover:bg-primary/10 rounded-lg text-muted-foreground hover:text-primary transition-colors"
-                        >
-                          <Edit2 size={16} />
-                        </button>
+                        {activeTab === "ACTIVE" && (
+                          <button
+                            title="Edit Details"
+                            onClick={() => openEditModal(student)}
+                            className="p-2 hover:bg-primary/10 rounded-lg text-muted-foreground hover:text-primary transition-colors"
+                          >
+                            <Edit2 size={16} />
+                          </button>
+                        )}
                         {activeTab === "ACTIVE" && (
                           <>
                             {/* Assign Room */}

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 
@@ -54,6 +54,11 @@ export class StudentsService {
       }
       if (profileData.refundAmount !== undefined) {
         profileData.refundAmount = Number(profileData.refundAmount);
+      }
+
+      // Prevent reactivating/unmarking a student who has already left
+      if (student.hasLeft && (profileData.hasLeft === false || profileData.hasLeft === 'false')) {
+        throw new BadRequestException('A student who has left cannot be unmarked or reactivated.');
       }
 
       // Automatically set leftDate if hasLeft changes, and force clear room details for left students

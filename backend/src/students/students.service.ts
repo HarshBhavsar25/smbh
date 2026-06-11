@@ -62,6 +62,8 @@ export class StudentsService {
           profileData.leftDate = new Date();
         }
         profileData.hasLeft = true;
+        profileData.roomId = null;
+        profileData.locationInRoom = null;
       } else if (profileData.hasLeft === false || profileData.hasLeft === 'false') {
         profileData.leftDate = null;
         profileData.hasLeft = false;
@@ -84,9 +86,39 @@ export class StudentsService {
     const student = await this.prisma.studentProfile.findUnique({ where: { id } });
     if (!student) throw new NotFoundException('Student not found');
 
-    // Delete profile first (FK constraint), then user
-    await this.prisma.studentProfile.delete({ where: { id } });
-    await this.prisma.user.delete({ where: { id: student.userId } });
+    // Use a transaction to safely clean up all student-related data first
+    await this.prisma.$transaction(async (tx) => {
+      // 1. Delete dependent complaint elements (votes and comments on any complaint)
+      await tx.complaintVote.deleteMany({ where: { studentId: id } });
+      await tx.complaintComment.deleteMany({ where: { studentId: id } });
+
+      // 2. Find complaints created by the student, delete their associated comments and votes, then delete the complaints
+      const studentComplaints = await tx.complaint.findMany({ where: { studentId: id } });
+      const complaintIds = studentComplaints.map(c => c.id);
+      if (complaintIds.length > 0) {
+        await tx.complaintVote.deleteMany({ where: { complaintId: { in: complaintIds } } });
+        await tx.complaintComment.deleteMany({ where: { complaintId: { in: complaintIds } } });
+        await tx.complaint.deleteMany({ where: { id: { in: complaintIds } } });
+      }
+
+      // 3. Delete attendance records, vacations, leave requests, and fee payments
+      await tx.attendanceRecord.deleteMany({ where: { studentId: id } });
+      await tx.vacationRequest.deleteMany({ where: { studentId: id } });
+      await tx.leaveRequest.deleteMany({ where: { studentId: id } });
+      await tx.feePayment.deleteMany({ where: { studentId: id } });
+
+      // 4. Delete user-related details
+      await tx.notification.deleteMany({ where: { userId: student.userId } });
+      await tx.activityLog.deleteMany({ where: { userId: student.userId } });
+      await tx.post.deleteMany({ where: { authorId: student.userId } });
+
+      // 5. Delete student profile
+      await tx.studentProfile.delete({ where: { id } });
+
+      // 6. Delete user
+      await tx.user.delete({ where: { id: student.userId } });
+    });
+
     return { message: 'Student deleted successfully' };
   }
 }

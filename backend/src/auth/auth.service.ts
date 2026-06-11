@@ -12,9 +12,15 @@ export class AuthService {
   ) {}
 
   async validateUser(email: string, pass: string): Promise<any> {
-    const user = await this.prisma.user.findUnique({ where: { email } });
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+      include: { studentProfile: true },
+    });
     if (user && await bcrypt.compare(pass, user.password)) {
-      const { password, ...result } = user;
+      if (user.role === Role.STUDENT && user.studentProfile?.hasLeft) {
+        throw new UnauthorizedException('Access denied. This student account is deactivated (Left Hostel).');
+      }
+      const { password, studentProfile, ...result } = user;
       return result;
     }
     return null;

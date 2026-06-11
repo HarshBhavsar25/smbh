@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Users, UserPlus, Search, Edit2, Trash2, DoorClosed, 
-  Phone, Mail, BookOpen, MapPin, X, Check, Loader2, CreditCard, Save, Eye
+  Phone, Mail, BookOpen, MapPin, X, Check, Loader2, CreditCard, Save, Eye, LogOut
 } from "lucide-react";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
@@ -48,7 +48,12 @@ export default function StudentsAdminPage() {
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [isMarkLeftModalOpen, setIsMarkLeftModalOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
+
+  // Tabs & Refund
+  const [activeTab, setActiveTab] = useState<"ACTIVE" | "LEFT">("ACTIVE");
+  const [markLeftRefund, setMarkLeftRefund] = useState("0");
 
   // Form states
   const [newStudent, setNewStudent] = useState(emptyStudent);
@@ -251,6 +256,36 @@ export default function StudentsAdminPage() {
     }
   };
 
+  /* ---------- Mark Left ---------- */
+  const handleMarkStudentLeftSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedStudent) return;
+    setIsSubmitting(true);
+    setError("");
+    const token = localStorage.getItem("token");
+    try {
+      const res = await fetch(`${API}/students/${selectedStudent.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          hasLeft: true,
+          refundAmount: Number(markLeftRefund) || 0,
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to mark student as left");
+      setIsMarkLeftModalOpen(false);
+      setSelectedStudent(null);
+      fetchData();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   /* ---------- Delete ---------- */
   const handleDeleteStudent = async (id: string) => {
     if (!confirm("Are you sure you want to remove this student?")) return;
@@ -266,12 +301,14 @@ export default function StudentsAdminPage() {
     }
   };
 
-  const filteredStudents = students.filter(
-    (s) =>
+  const filteredStudents = students.filter((s) => {
+    const matchesTab = activeTab === "ACTIVE" ? !s.hasLeft : s.hasLeft;
+    const matchesSearch =
       s.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       s.collegeName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      s.room?.roomNumber?.includes(searchTerm)
-  );
+      s.room?.roomNumber?.includes(searchTerm);
+    return matchesTab && matchesSearch;
+  });
 
   /* ===================== RENDER ===================== */
   return (
@@ -290,16 +327,42 @@ export default function StudentsAdminPage() {
         </button>
       </div>
 
-      {/* Search */}
-      <div className="relative max-w-md">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-        <input
-          type="text"
-          placeholder="Search by name, college, or room..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full bg-[#121214] border border-white/5 rounded-2xl py-3.5 pl-12 pr-4 text-white placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-        />
+      {/* Search & Tabs */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="relative w-full max-w-md">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+          <input
+            type="text"
+            placeholder="Search by name, college, or room..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full bg-[#121214] border border-white/5 rounded-2xl py-3.5 pl-12 pr-4 text-white placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+          />
+        </div>
+
+        {/* Tab switcher */}
+        <div className="flex bg-[#121214] p-1 rounded-xl border border-white/5 gap-1.5 w-full md:w-auto self-start">
+          <button
+            onClick={() => setActiveTab("ACTIVE")}
+            className={`px-5 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer ${
+              activeTab === "ACTIVE"
+                ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+                : "text-muted-foreground hover:text-white"
+            }`}
+          >
+            Active Residents
+          </button>
+          <button
+            onClick={() => setActiveTab("LEFT")}
+            className={`px-5 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer ${
+              activeTab === "LEFT"
+                ? "bg-red-500/20 text-red-400 border border-red-500/10"
+                : "text-muted-foreground hover:text-white"
+            }`}
+          >
+            Left Students
+          </button>
+        </div>
       </div>
 
       {/* Table */}
@@ -316,7 +379,11 @@ export default function StudentsAdminPage() {
                   <th className="p-6">Name</th>
                   <th className="p-6">Contact</th>
                   <th className="p-6">College / Course</th>
-                  <th className="p-6">Room</th>
+                  {activeTab === "ACTIVE" ? (
+                    <th className="p-6">Room</th>
+                  ) : (
+                    <th className="p-6">Left Date & Refund</th>
+                  )}
                   <th className="p-6">Fee Status</th>
                   <th className="p-6 text-right">Actions</th>
                 </tr>
@@ -341,21 +408,32 @@ export default function StudentsAdminPage() {
                       <div className="text-xs text-muted-foreground mt-0.5">{student.course}</div>
                     </td>
                     <td className="p-6">
-                      {student.room ? (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-500 text-xs font-semibold">
-                          <DoorClosed size={12} /> Room {student.room.roomNumber}
-                        </span>
+                      {activeTab === "ACTIVE" ? (
+                        student.room ? (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-500 text-xs font-semibold">
+                            <DoorClosed size={12} /> Room {student.room.roomNumber}
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => {
+                              setSelectedStudent(student);
+                              setSelectedRoomId("");
+                              setIsAssignModalOpen(true);
+                            }}
+                            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 text-xs font-semibold transition-colors"
+                          >
+                            <DoorClosed size={12} /> Unassigned
+                          </button>
+                        )
                       ) : (
-                        <button
-                          onClick={() => {
-                            setSelectedStudent(student);
-                            setSelectedRoomId("");
-                            setIsAssignModalOpen(true);
-                          }}
-                          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 text-xs font-semibold transition-colors"
-                        >
-                          <DoorClosed size={12} /> Unassigned
-                        </button>
+                        <div className="space-y-1">
+                          <div className="text-xs text-red-400 font-semibold">
+                            Left: {student.leftDate ? new Date(student.leftDate).toLocaleDateString("en-IN") : "N/A"}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            Refunded: ₹{student.refundAmount || 0}
+                          </div>
+                        </div>
                       )}
                     </td>
                     <td className="p-6">
@@ -387,19 +465,35 @@ export default function StudentsAdminPage() {
                         >
                           <Edit2 size={16} />
                         </button>
-                        {/* Assign Room */}
-                        <button
-                          title="Assign Room"
-                          onClick={() => {
-                            setSelectedStudent(student);
-                            setSelectedRoomId(student.roomId || "");
-                            setSelectedLocationInRoom(student.locationInRoom || "");
-                            setIsAssignModalOpen(true);
-                          }}
-                          className="p-2 hover:bg-white/5 rounded-lg text-muted-foreground hover:text-white transition-colors"
-                        >
-                          <DoorClosed size={16} />
-                        </button>
+                        {activeTab === "ACTIVE" && (
+                          <>
+                            {/* Assign Room */}
+                            <button
+                              title="Assign Room"
+                              onClick={() => {
+                                setSelectedStudent(student);
+                                setSelectedRoomId(student.roomId || "");
+                                setSelectedLocationInRoom(student.locationInRoom || "");
+                                setIsAssignModalOpen(true);
+                              }}
+                              className="p-2 hover:bg-white/5 rounded-lg text-muted-foreground hover:text-white transition-colors"
+                            >
+                              <DoorClosed size={16} />
+                            </button>
+                            {/* Mark Left */}
+                            <button
+                              title="Mark Student Left"
+                              onClick={() => {
+                                setSelectedStudent(student);
+                                setMarkLeftRefund(student.securityDeposit ? String(student.securityDeposit) : "0");
+                                setIsMarkLeftModalOpen(true);
+                              }}
+                              className="p-2 hover:bg-red-500/10 rounded-lg text-muted-foreground hover:text-red-400 transition-colors"
+                            >
+                              <LogOut size={16} />
+                            </button>
+                          </>
+                        )}
                         {/* Delete */}
                         <button
                           title="Delete Student"
@@ -1354,6 +1448,86 @@ export default function StudentsAdminPage() {
                   Close
                 </button>
               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ===== MODAL: Mark Left ===== */}
+      <AnimatePresence>
+        {isMarkLeftModalOpen && selectedStudent && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-md bg-[#121214] border border-white/5 rounded-3xl shadow-2xl p-6 md:p-8 max-h-[90vh] flex flex-col"
+            >
+              <div className="flex justify-between items-center mb-6 flex-shrink-0">
+                <h3 className="text-xl font-bold text-white">Mark Student Left</h3>
+                <button
+                  onClick={() => {
+                    setIsMarkLeftModalOpen(false);
+                    setSelectedStudent(null);
+                  }}
+                  className="text-muted-foreground hover:text-white transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {error && (
+                <div className="mb-4 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-sm flex-shrink-0">
+                  {error}
+                </div>
+              )}
+
+              <form onSubmit={handleMarkStudentLeftSubmit} className="space-y-5 flex-1 overflow-y-auto pr-1 -mr-1">
+                <div className="text-sm text-muted-foreground leading-relaxed">
+                  Are you sure you want to mark <span className="text-white font-bold">{selectedStudent.fullName}</span> as left? 
+                  This will vacate their assigned room/bed and deactivate their student login portal immediately.
+                </div>
+
+                <div className="bg-white/5 p-4 rounded-xl border border-white/5 space-y-1">
+                  <div className="text-xs text-muted-foreground">Original Security Deposit</div>
+                  <div className="text-lg font-bold text-white">₹{selectedStudent.securityDeposit || 0}</div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-muted-foreground">Refund Amount (₹)</label>
+                  <input
+                    type="number"
+                    required
+                    value={markLeftRefund}
+                    onChange={(e) => setMarkLeftRefund(e.target.value)}
+                    className="w-full bg-[#16161a] border border-white/5 rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-1 focus:ring-primary/50 text-sm"
+                    placeholder="e.g. 5000"
+                  />
+                  <p className="text-[11px] text-muted-foreground/60 italic">
+                    Specify the amount of security deposit or other fees being refunded back to the student.
+                  </p>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-4 border-t border-white/5 flex-shrink-0 mt-6">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsMarkLeftModalOpen(false);
+                      setSelectedStudent(null);
+                    }}
+                    className="px-5 py-3 rounded-xl border border-white/5 bg-[#16161a] hover:bg-white/5 transition-colors text-white font-semibold text-sm"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="px-5 py-3 rounded-xl bg-red-500 hover:bg-red-600 transition-all text-white font-semibold text-sm flex items-center gap-2"
+                  >
+                    {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : "Confirm Student Left"}
+                  </button>
+                </div>
+              </form>
             </motion.div>
           </div>
         )}

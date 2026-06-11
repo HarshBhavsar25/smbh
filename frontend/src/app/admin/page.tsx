@@ -67,8 +67,8 @@ export default function AdminDashboard() {
   }
 
   // 1. Stats calculations
-  const totalStudents = students.length;
-  const occupiedBeds = students.filter(s => s.roomId).length;
+  const totalStudents = students.filter(s => !s.hasLeft).length;
+  const occupiedBeds = students.filter(s => !s.hasLeft && s.roomId).length;
   const totalCapacity = rooms.reduce((sum, r) => sum + r.capacity, 0);
   const vacantBeds = Math.max(0, totalCapacity - occupiedBeds);
   const totalRooms = rooms.length;

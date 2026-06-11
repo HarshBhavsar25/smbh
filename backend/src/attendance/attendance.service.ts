@@ -8,6 +8,9 @@ export class AttendanceService {
   // 1. Get minimal students list for public staff attendance taking
   async getStudentsList() {
     return this.prisma.studentProfile.findMany({
+      where: {
+        hasLeft: false,
+      },
       select: {
         id: true,
         fullName: true,

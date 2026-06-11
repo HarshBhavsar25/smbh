@@ -3,14 +3,15 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { 
-  Search, Eye, Trash2, FileText, CheckCircle2, XCircle, Loader2, Download 
+  Search, Eye, Trash2, FileText, CheckCircle2, XCircle, Loader2, Download, Users, LogOut 
 } from "lucide-react";
 
 export default function AdminDocumentsPage() {
   const [students, setStudents] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterType, setFilterType] = useState("ALL"); // ALL, MISSING_AADHAAR, MISSING_PAN, FULLY_DOCUMENTED, NONE_UPLOADED
+  const [filterType, setFilterType] = useState("ALL");
+  const [activeTab, setActiveTab] = useState<"ACTIVE" | "LEFT">("ACTIVE");
 
   useEffect(() => {
     fetchStudents();
@@ -51,7 +52,6 @@ export default function AdminDocumentsPage() {
       });
 
       if (res.ok) {
-        // Refresh student list
         fetchStudents();
       } else {
         alert("Failed to delete document");
@@ -61,31 +61,26 @@ export default function AdminDocumentsPage() {
     }
   };
 
-  // Compute analytics
-  const totalStudents = students.length;
-  const aadhaarUploadedCount = students.filter(s => !!s.aadhaarUrl).length;
-  const panUploadedCount = students.filter(s => !!s.panUrl).length;
+  const activeStudents = students.filter(s => !s.hasLeft);
+  const leftStudents = students.filter(s => s.hasLeft);
+  const displayList = activeTab === "ACTIVE" ? activeStudents : leftStudents;
+
+  // Compute analytics — only for active residents
+  const totalActive = activeStudents.length;
+  const aadhaarUploadedCount = activeStudents.filter(s => !!s.aadhaarUrl).length;
+  const panUploadedCount = activeStudents.filter(s => !!s.panUrl).length;
   
-  const filteredStudents = students.filter(student => {
-    // Search match
+  const filteredStudents = displayList.filter(student => {
     const matchesSearch = student.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           (student.room?.roomNumber || "").includes(searchQuery);
-    
     if (!matchesSearch) return false;
 
-    // Filter match
     switch (filterType) {
-      case "MISSING_AADHAAR":
-        return !student.aadhaarUrl;
-      case "MISSING_PAN":
-        return !student.panUrl;
-      case "FULLY_DOCUMENTED":
-        return !!student.aadhaarUrl && !!student.panUrl;
-      case "NONE_UPLOADED":
-        return !student.aadhaarUrl && !student.panUrl;
-      case "ALL":
-      default:
-        return true;
+      case "MISSING_AADHAAR": return !student.aadhaarUrl;
+      case "MISSING_PAN": return !student.panUrl;
+      case "FULLY_DOCUMENTED": return !!student.aadhaarUrl && !!student.panUrl;
+      case "NONE_UPLOADED": return !student.aadhaarUrl && !student.panUrl;
+      default: return true;
     }
   });
 
@@ -94,22 +89,22 @@ export default function AdminDocumentsPage() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-4">
         <div>
           <h1 className="text-3xl font-bold text-white mb-2">Documents Dashboard</h1>
-          <p className="text-muted-foreground">Monitor, verify, and manage resident KYC documents (Aadhaar & PAN).</p>
+          <p className="text-muted-foreground">Monitor, verify, and manage resident KYC documents (Aadhaar &amp; PAN).</p>
         </div>
       </div>
 
-      {/* Overview Cards */}
+      {/* Overview Cards — active residents only */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="p-6 rounded-3xl border border-white/5 bg-[#121214] shadow-xl">
           <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider mb-2">Aadhaar Coverage</p>
           <div className="flex items-baseline gap-2">
             <span className="text-3xl font-bold text-white">{aadhaarUploadedCount}</span>
-            <span className="text-sm text-muted-foreground">/ {totalStudents} residents</span>
+            <span className="text-sm text-muted-foreground">/ {totalActive} active residents</span>
           </div>
           <div className="h-1.5 w-full bg-[#16161a] rounded-full overflow-hidden mt-4">
             <div 
               className="h-full bg-primary rounded-full transition-all duration-500" 
-              style={{ width: `${totalStudents > 0 ? (aadhaarUploadedCount / totalStudents) * 100 : 0}%` }}
+              style={{ width: `${totalActive > 0 ? (aadhaarUploadedCount / totalActive) * 100 : 0}%` }}
             ></div>
           </div>
         </div>
@@ -118,12 +113,12 @@ export default function AdminDocumentsPage() {
           <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider mb-2">PAN Coverage</p>
           <div className="flex items-baseline gap-2">
             <span className="text-3xl font-bold text-white">{panUploadedCount}</span>
-            <span className="text-sm text-muted-foreground">/ {totalStudents} residents</span>
+            <span className="text-sm text-muted-foreground">/ {totalActive} active residents</span>
           </div>
           <div className="h-1.5 w-full bg-[#16161a] rounded-full overflow-hidden mt-4">
             <div 
               className="h-full bg-primary rounded-full transition-all duration-500" 
-              style={{ width: `${totalStudents > 0 ? (panUploadedCount / totalStudents) * 100 : 0}%` }}
+              style={{ width: `${totalActive > 0 ? (panUploadedCount / totalActive) * 100 : 0}%` }}
             ></div>
           </div>
         </div>
@@ -132,14 +127,14 @@ export default function AdminDocumentsPage() {
           <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider mb-2">Fully Documented</p>
           <div className="flex items-baseline gap-2">
             <span className="text-3xl font-bold text-emerald-500">
-              {students.filter(s => !!s.aadhaarUrl && !!s.panUrl).length}
+              {activeStudents.filter(s => !!s.aadhaarUrl && !!s.panUrl).length}
             </span>
-            <span className="text-sm text-muted-foreground">/ {totalStudents} residents</span>
+            <span className="text-sm text-muted-foreground">/ {totalActive} active residents</span>
           </div>
           <div className="h-1.5 w-full bg-[#16161a] rounded-full overflow-hidden mt-4">
             <div 
               className="h-full bg-emerald-500 rounded-full transition-all duration-500" 
-              style={{ width: `${totalStudents > 0 ? (students.filter(s => !!s.aadhaarUrl && !!s.panUrl).length / totalStudents) * 100 : 0}%` }}
+              style={{ width: `${totalActive > 0 ? (activeStudents.filter(s => !!s.aadhaarUrl && !!s.panUrl).length / totalActive) * 100 : 0}%` }}
             ></div>
           </div>
         </div>
@@ -147,20 +142,46 @@ export default function AdminDocumentsPage() {
 
       {/* FILTER & SEARCH BAR */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-4 bg-[#121214] border border-white/5 p-4 rounded-3xl shadow-xl">
-        <div className="relative w-full md:w-80">
-          <Search className="absolute left-4 top-3 text-muted-foreground" size={18} />
-          <input
-            type="text"
-            placeholder="Search by name or room..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-[#16161a] border border-white/5 rounded-xl py-2.5 pl-11 pr-4 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
-          />
+        <div className="flex items-center gap-3 w-full md:w-auto">
+          {/* Tab Switcher */}
+          <div className="flex bg-[#16161a] p-1 rounded-xl border border-white/5 gap-1 shrink-0">
+            <button
+              onClick={() => setActiveTab("ACTIVE")}
+              className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer flex items-center gap-1.5 ${
+                activeTab === "ACTIVE"
+                  ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+                  : "text-muted-foreground hover:text-white"
+              }`}
+            >
+              <Users size={12} /> Active Residents
+            </button>
+            <button
+              onClick={() => setActiveTab("LEFT")}
+              className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer flex items-center gap-1.5 ${
+                activeTab === "LEFT"
+                  ? "bg-red-500/20 text-red-400 border border-red-500/10"
+                  : "text-muted-foreground hover:text-white"
+              }`}
+            >
+              <LogOut size={12} /> Left Students
+            </button>
+          </div>
+
+          <div className="relative w-full md:w-64">
+            <Search className="absolute left-4 top-3 text-muted-foreground" size={18} />
+            <input
+              type="text"
+              placeholder="Search by name or room..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-[#16161a] border border-white/5 rounded-xl py-2.5 pl-11 pr-4 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+            />
+          </div>
         </div>
 
         <div className="flex flex-wrap gap-2 w-full md:w-auto">
           {[
-            { label: "All Residents", val: "ALL" },
+            { label: "All", val: "ALL" },
             { label: "Missing Aadhaar", val: "MISSING_AADHAAR" },
             { label: "Missing PAN", val: "MISSING_PAN" },
             { label: "Fully Documented", val: "FULLY_DOCUMENTED" },
@@ -181,6 +202,14 @@ export default function AdminDocumentsPage() {
         </div>
       </div>
 
+      {/* Left student banner */}
+      {activeTab === "LEFT" && (
+        <div className="flex items-center gap-3 px-5 py-3.5 rounded-2xl bg-red-500/5 border border-red-500/15 text-red-400 text-sm">
+          <LogOut size={16} className="shrink-0" />
+          <span>Showing documents for <strong>{leftStudents.length}</strong> student(s) who have left the hostel. Their room &amp; bed assignments have been released.</span>
+        </div>
+      )}
+
       {/* DOCUMENTS LIST */}
       {isLoading ? (
         <div className="flex items-center justify-center p-20">
@@ -193,7 +222,7 @@ export default function AdminDocumentsPage() {
               <thead>
                 <tr className="border-b border-white/5 text-xs font-semibold text-muted-foreground uppercase tracking-wider bg-[#16161a]/50">
                   <th className="py-4 px-6">Resident</th>
-                  <th className="py-4 px-6">Room</th>
+                  <th className="py-4 px-6">{activeTab === "ACTIVE" ? "Room" : "Left Date"}</th>
                   <th className="py-4 px-6">Aadhaar Card</th>
                   <th className="py-4 px-6">PAN Card</th>
                 </tr>
@@ -215,7 +244,17 @@ export default function AdminDocumentsPage() {
                         </div>
                       </td>
                       <td className="py-4 px-6 font-semibold">
-                        {student.room ? `Room ${student.room.roomNumber}` : <span className="text-muted-foreground">Unassigned</span>}
+                        {activeTab === "ACTIVE" ? (
+                          student.room
+                            ? `Room ${student.room.roomNumber}`
+                            : <span className="text-muted-foreground">Unassigned</span>
+                        ) : (
+                          <span className="text-red-400 text-xs">
+                            {student.leftDate
+                              ? new Date(student.leftDate).toLocaleDateString("en-IN")
+                              : "N/A"}
+                          </span>
+                        )}
                       </td>
                       
                       {/* Aadhaar Column */}

@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
-  Plane, Home, CheckCircle2, Clock, Search, Loader2, User, CalendarDays, RefreshCcw
+  Plane, Home, CheckCircle2, Clock, Search, Loader2, CalendarDays, RefreshCcw, Trash2, X
 } from "lucide-react";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
@@ -20,6 +20,8 @@ export default function AdminVacationsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("ALL");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [isClearing, setIsClearing] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   useEffect(() => {
     fetchVacations();
@@ -67,6 +69,25 @@ export default function AdminVacationsPage() {
     }
   };
 
+  const handleClearAll = async () => {
+    setIsClearing(true);
+    const token = localStorage.getItem("token");
+    try {
+      const res = await fetch(`${API}/vacations/all`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        setVacations([]);
+        setShowClearConfirm(false);
+      }
+    } catch (err) {
+      console.error("Error clearing vacations", err);
+    } finally {
+      setIsClearing(false);
+    }
+  };
+
   const filtered = vacations.filter((v) => {
     const matchSearch =
       v.student?.fullName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -88,12 +109,21 @@ export default function AdminVacationsPage() {
           <h1 className="text-3xl font-bold text-white mb-2">Vacation Tracker</h1>
           <p className="text-muted-foreground">Monitor and manage resident vacation requests in real-time.</p>
         </div>
-        <button
-          onClick={fetchVacations}
-          className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-xl bg-white/5 border border-white/10 text-muted-foreground hover:text-white hover:bg-white/10 transition-all"
-        >
-          <RefreshCcw size={15} /> Refresh
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={fetchVacations}
+            className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-xl bg-white/5 border border-white/10 text-muted-foreground hover:text-white hover:bg-white/10 transition-all"
+          >
+            <RefreshCcw size={15} /> Refresh
+          </button>
+          <button
+            onClick={() => setShowClearConfirm(true)}
+            disabled={vacations.length === 0}
+            className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+          >
+            <Trash2 size={15} /> Clear All Records
+          </button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -221,6 +251,50 @@ export default function AdminVacationsPage() {
           })}
         </div>
       )}
+
+      {/* Clear All Confirm Modal */}
+      <AnimatePresence>
+        {showClearConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-md bg-[#121214] border border-white/5 rounded-3xl shadow-2xl p-8"
+            >
+              <div className="flex justify-between items-center mb-5">
+                <h3 className="text-xl font-bold text-white">Clear All Vacation Records</h3>
+                <button
+                  onClick={() => setShowClearConfirm(false)}
+                  className="text-muted-foreground hover:text-white transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              <p className="text-sm text-muted-foreground leading-relaxed mb-6">
+                This will permanently delete <strong className="text-red-400">all {vacations.length} vacation record(s)</strong>. 
+                This action cannot be undone. Students will still be able to submit new vacation requests.
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setShowClearConfirm(false)}
+                  className="px-5 py-2.5 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 text-white font-semibold text-sm transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleClearAll}
+                  disabled={isClearing}
+                  className="px-5 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white font-semibold text-sm flex items-center gap-2 transition-colors disabled:opacity-60"
+                >
+                  {isClearing ? <Loader2 className="animate-spin" size={16} /> : <Trash2 size={16} />}
+                  {isClearing ? "Clearing..." : "Yes, Clear All"}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

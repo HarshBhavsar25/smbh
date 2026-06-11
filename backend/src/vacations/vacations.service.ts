@@ -56,4 +56,9 @@ export class VacationsService {
       data,
     });
   }
+
+  async clearAll() {
+    const { count } = await this.prisma.vacationRequest.deleteMany();
+    return { message: `Deleted ${count} vacation record(s) successfully.` };
+  }
 }

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Patch, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Patch, Delete, UseGuards, Request } from '@nestjs/common';
 import { VacationsService } from './vacations.service';
 import { AuthGuard } from '@nestjs/passport';
 
@@ -28,5 +28,10 @@ export class VacationsController {
   @Patch(':id')
   async update(@Param('id') id: string, @Body() body: any) {
     return this.vacationsService.update(id, body);
+  }
+
+  @Delete('all')
+  async clearAll() {
+    return this.vacationsService.clearAll();
   }
 }

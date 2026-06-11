@@ -32,6 +32,9 @@ const emptyStudent = {
   locationInRoom: "",
   yearOfStudy: "1st",
   yearOfStudyOther: "",
+  securityDeposit: "",
+  refundAmount: "",
+  hasLeft: false,
 };
 
 export default function StudentsAdminPage() {
@@ -69,6 +72,9 @@ export default function StudentsAdminPage() {
     locationInRoom: "",
     yearOfStudy: "1st",
     yearOfStudyOther: "",
+    securityDeposit: "",
+    refundAmount: "",
+    hasLeft: false,
   });
 
   const [selectedRoomId, setSelectedRoomId] = useState("");
@@ -146,6 +152,9 @@ export default function StudentsAdminPage() {
       locationInRoom: student.locationInRoom || "",
       yearOfStudy: student.yearOfStudy || "1st",
       yearOfStudyOther: student.yearOfStudyOther || "",
+      securityDeposit: student.securityDeposit !== undefined ? String(student.securityDeposit) : "",
+      refundAmount: student.refundAmount !== undefined ? String(student.refundAmount) : "",
+      hasLeft: student.hasLeft || false,
     });
     setError("");
     setIsEditModalOpen(true);
@@ -178,6 +187,9 @@ export default function StudentsAdminPage() {
         locationInRoom: editForm.locationInRoom || null,
         yearOfStudy: editForm.yearOfStudy,
         yearOfStudyOther: editForm.yearOfStudyOther,
+        securityDeposit: Number(editForm.securityDeposit) || 0,
+        refundAmount: Number(editForm.refundAmount) || 0,
+        hasLeft: editForm.hasLeft,
       };
       if (editForm.newPassword.trim()) {
         payload.password = editForm.newPassword;
@@ -555,10 +567,10 @@ export default function StudentsAdminPage() {
                   </div>
                 </div>
 
-                {/* Room Assignment & Location */}
+                {/* Room Assignment & Fees */}
                 <div>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-primary mb-3">Room & Location Assignment</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-primary mb-3">Room Assignment & Fees</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="space-y-1.5">
                       <label className="text-sm font-medium text-muted-foreground">Room</label>
                       <select
@@ -598,6 +610,16 @@ export default function StudentsAdminPage() {
                       {!newStudent.roomId && (
                         <p className="text-[11px] text-muted-foreground/60 italic mt-1">Assign a room first to select a location.</p>
                       )}
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium text-muted-foreground">Security Deposit (₹)</label>
+                      <input
+                        type="number"
+                        value={newStudent.securityDeposit}
+                        onChange={(e) => setNewStudent({ ...newStudent, securityDeposit: e.target.value })}
+                        className={INPUT_CLASS}
+                        placeholder="e.g. 5000"
+                      />
                     </div>
                   </div>
                 </div>
@@ -998,6 +1020,51 @@ export default function StudentsAdminPage() {
                   </div>
                 </div>
 
+                {/* Security Deposit & Status */}
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-primary mb-3">Security & Status</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium text-muted-foreground">Security Deposit (₹)</label>
+                      <input
+                        type="number"
+                        value={editForm.securityDeposit}
+                        onChange={(e) => setEditForm({ ...editForm, securityDeposit: e.target.value })}
+                        className={INPUT_CLASS}
+                        placeholder="e.g. 5000"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium text-muted-foreground">Refund Amount Paid (₹)</label>
+                      <input
+                        type="number"
+                        value={editForm.refundAmount}
+                        onChange={(e) => setEditForm({ ...editForm, refundAmount: e.target.value })}
+                        className={INPUT_CLASS}
+                        placeholder="e.g. 5000"
+                        disabled={!editForm.hasLeft}
+                      />
+                      {!editForm.hasLeft && (
+                        <p className="text-[11px] text-muted-foreground/60 italic mt-1">Mark student as left to enter refund amount.</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="mt-4">
+                    <label className="flex items-center gap-3 cursor-pointer group">
+                      <div
+                        onClick={() => setEditForm({ ...editForm, hasLeft: !editForm.hasLeft, refundAmount: !editForm.hasLeft ? editForm.refundAmount : "" })}
+                        className={`w-10 h-5 rounded-full transition-colors flex items-center px-0.5 ${editForm.hasLeft ? 'bg-red-500' : 'bg-white/10'}`}
+                      >
+                        <div className={`w-4 h-4 rounded-full bg-white shadow transition-transform ${editForm.hasLeft ? 'translate-x-5' : 'translate-x-0'}`} />
+                      </div>
+                      <span className="text-sm font-medium text-white group-hover:text-white/80 transition-colors">
+                        Mark Student as Left Hostel
+                        {editForm.hasLeft && <span className="ml-2 text-xs text-red-400 font-semibold">(LEFT)</span>}
+                      </span>
+                    </label>
+                  </div>
+                </div>
+
                 <div className="flex justify-end gap-3 pt-4 border-t border-white/5 flex-shrink-0">
                   <button type="button" onClick={() => setIsEditModalOpen(false)} className="px-5 py-3 rounded-xl border border-white/5 bg-[#16161a] hover:bg-white/5 transition-colors text-white font-semibold text-sm">Cancel</button>
                   <button type="submit" disabled={isSubmitting} className="px-5 py-3 rounded-xl bg-primary hover:bg-primary/90 transition-all text-primary-foreground font-semibold text-sm flex items-center gap-2">
@@ -1167,6 +1234,41 @@ export default function StudentsAdminPage() {
                         <span className="text-xs text-muted-foreground block">Spot Location in Room</span>
                         <span className="text-white font-medium">{selectedStudent.locationInRoom || "N/A"}</span>
                       </div>
+                    </div>
+                  </div>
+
+                  {/* Security & Status */}
+                  <div className="space-y-4 bg-white/5 p-5 rounded-2xl border border-white/5">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-primary">Security & Status</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <span className="text-xs text-muted-foreground block">Security Deposit</span>
+                        <span className="text-white font-medium">
+                          ₹{selectedStudent.securityDeposit || 0}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-xs text-muted-foreground block">Status</span>
+                        <span className={`font-semibold text-xs px-2.5 py-0.5 rounded-full inline-block ${selectedStudent.hasLeft ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'bg-green-500/10 text-green-400 border border-green-500/20'}`}>
+                          {selectedStudent.hasLeft ? 'Left Hostel' : 'Active'}
+                        </span>
+                      </div>
+                      {selectedStudent.hasLeft && (
+                        <>
+                          <div>
+                            <span className="text-xs text-muted-foreground block">Left Date</span>
+                            <span className="text-white font-medium">
+                              {selectedStudent.leftDate ? new Date(selectedStudent.leftDate).toLocaleDateString("en-IN") : "N/A"}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-xs text-muted-foreground block">Refund Amount Paid</span>
+                            <span className="text-white font-medium">
+                              ₹{selectedStudent.refundAmount || 0}
+                            </span>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
 

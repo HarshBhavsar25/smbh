@@ -18,6 +18,7 @@ export class FeesService {
         status,
         utr: data.utr || null,
         receiptUrl: data.receiptUrl || null,
+        paymentType: data.paymentType || 'HOSTEL_FEE',
       },
     });
 

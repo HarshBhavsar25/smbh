@@ -80,6 +80,11 @@ model StudentProfile {
   yearOfStudy     String?
   yearOfStudyOther String?
   
+  securityDeposit Float    @default(0)
+  refundAmount    Float    @default(0)
+  hasLeft         Boolean  @default(false)
+  leftDate        DateTime?
+  
   aadhaarUrl    String?
   collegeIdUrl  String?
   panUrl        String?
@@ -123,6 +128,7 @@ model FeePayment {
   paymentDate DateTime @default(now())
   receiptUrl  String?
   utr         String?
+  paymentType String   @default("HOSTEL_FEE")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }

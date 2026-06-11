@@ -72,6 +72,7 @@ export class AuthService {
           locationInRoom: data.locationInRoom || null,
           yearOfStudy: data.yearOfStudy,
           yearOfStudyOther: data.yearOfStudyOther,
+          securityDeposit: data.securityDeposit ? Number(data.securityDeposit) : 0,
         },
       });
     }

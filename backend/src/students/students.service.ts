@@ -48,6 +48,25 @@ export class StudentsService {
 
     // Update StudentProfile fields if any remain
     if (Object.keys(profileData).length > 0) {
+      // Parse securityDeposit and refundAmount to Float if present
+      if (profileData.securityDeposit !== undefined) {
+        profileData.securityDeposit = Number(profileData.securityDeposit);
+      }
+      if (profileData.refundAmount !== undefined) {
+        profileData.refundAmount = Number(profileData.refundAmount);
+      }
+
+      // Automatically set leftDate if hasLeft changes
+      if (profileData.hasLeft === true || profileData.hasLeft === 'true') {
+        if (!student.hasLeft) {
+          profileData.leftDate = new Date();
+        }
+        profileData.hasLeft = true;
+      } else if (profileData.hasLeft === false || profileData.hasLeft === 'false') {
+        profileData.leftDate = null;
+        profileData.hasLeft = false;
+      }
+
       return this.prisma.studentProfile.update({
         where: { id },
         data: profileData,

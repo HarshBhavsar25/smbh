@@ -3,7 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Wifi, Shield, Zap, Droplets, MapPin, Phone, Mail,
-  Wind, Lock, Coffee, Monitor, CheckCircle2, BedDouble, ArrowRight, X, LayoutDashboard
+  Wind, Lock, Coffee, Monitor, CheckCircle2, BedDouble, ArrowRight, X, LayoutDashboard, Download
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -109,6 +109,9 @@ export default function LandingPage() {
             <div className="flex flex-wrap gap-4 pt-4">
               <a href="tel:+919881903999" className="px-8 py-4 rounded-full bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-all shadow-[0_0_20px_rgba(59,130,246,0.3)] flex items-center gap-2">
                 <Phone size={18} /> Call Now
+              </a>
+              <a href="/shri-mauli-boys-hostel-final-print-form.docx" download className="px-8 py-4 rounded-full glass-card hover:bg-white/5 transition-all font-semibold flex items-center gap-2">
+                <Download size={18} /> Admission Form
               </a>
               <a href="https://wa.me/919881903999" target="_blank" rel="noreferrer" className="px-8 py-4 rounded-full glass-card hover:bg-white/5 transition-all font-semibold flex items-center gap-2">
                 WhatsApp

@@ -120,7 +120,7 @@ export default function StudentDashboard() {
     .reduce((sum, p) => sum + p.amount, 0);
   const totalDue = Math.max(0, totalFee - totalPaid);
 
-  const roommate = student?.room?.students?.find((s: any) => s.id !== student.id);
+  const roommate = student?.room?.students?.find((s: any) => s.id !== student.id && !s.hasLeft);
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">

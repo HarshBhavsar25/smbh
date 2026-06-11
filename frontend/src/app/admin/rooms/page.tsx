@@ -181,7 +181,7 @@ export default function RoomsAdminPage() {
       ) : rooms.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {rooms.map((room) => {
-            const currentOccupancy = room.students?.length || 0;
+            const currentOccupancy = room.students?.filter((s: any) => !s.hasLeft).length || 0;
             const isFull = currentOccupancy >= room.capacity;
             const occupancyPercentage = (currentOccupancy / room.capacity) * 100;
             
@@ -252,7 +252,7 @@ export default function RoomsAdminPage() {
                         <span className="text-xs font-semibold text-muted-foreground block mb-2">Available Spots</span>
                         <div className="flex flex-wrap gap-1.5">
                           {room.locations.map((loc: string) => {
-                            const isOccupied = room.students?.some((s: any) => s.locationInRoom === loc);
+                            const isOccupied = room.students?.some((s: any) => s.locationInRoom === loc && !s.hasLeft);
                             return (
                               <span
                                 key={loc}
@@ -270,11 +270,11 @@ export default function RoomsAdminPage() {
                       </div>
                     )}
 
-                    {room.students && room.students.length > 0 && (
+                    {room.students && room.students.filter((s: any) => !s.hasLeft).length > 0 && (
                       <div className="pt-2">
                         <span className="text-xs font-semibold text-muted-foreground block mb-2">Residents</span>
                         <div className="flex flex-wrap gap-2">
-                          {room.students.map((student: any) => (
+                          {room.students.filter((s: any) => !s.hasLeft).map((student: any) => (
                             <span 
                               key={student.id} 
                               className="text-xs bg-white/5 border border-white/5 rounded-full px-3 py-1 text-white font-medium flex items-center gap-1.5"

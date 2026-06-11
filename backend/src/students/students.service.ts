@@ -56,8 +56,13 @@ export class StudentsService {
         profileData.refundAmount = Number(profileData.refundAmount);
       }
 
-      // Automatically set leftDate if hasLeft changes
-      if (profileData.hasLeft === true || profileData.hasLeft === 'true') {
+      // Automatically set leftDate if hasLeft changes, and force clear room details for left students
+      const isLeftOrLeaving =
+        profileData.hasLeft === true ||
+        profileData.hasLeft === 'true' ||
+        (student.hasLeft && profileData.hasLeft !== false && profileData.hasLeft !== 'false');
+
+      if (isLeftOrLeaving) {
         if (!student.hasLeft) {
           profileData.leftDate = new Date();
         }
@@ -80,6 +85,15 @@ export class StudentsService {
       where: { id },
       include: { user: { select: { email: true, role: true } }, room: true },
     });
+  }
+
+  async fixLeftStudents() {
+    // Clear roomId and locationInRoom for all students who have already left
+    const result = await this.prisma.studentProfile.updateMany({
+      where: { hasLeft: true, roomId: { not: null } },
+      data: { roomId: null, locationInRoom: null },
+    });
+    return { message: `Fixed ${result.count} left student(s) — room assignments cleared.` };
   }
 
   async remove(id: string) {

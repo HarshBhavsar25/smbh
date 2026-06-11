@@ -674,7 +674,7 @@ export default function StudentsAdminPage() {
                       >
                         <option value="">No Room (Unassigned)</option>
                         {rooms.map(room => {
-                          const occ = room.students?.length || 0;
+                          const occ = room.students?.filter((s: any) => !s.hasLeft).length || 0;
                           return (
                             <option key={room.id} value={room.id} disabled={occ >= room.capacity}>
                               Room {room.roomNumber} ({room.type.replace("_", " ")}) — {occ}/{room.capacity} occupied
@@ -693,7 +693,7 @@ export default function StudentsAdminPage() {
                       >
                         <option value="">Select Location</option>
                         {newStudent.roomId && (rooms.find(r => r.id === newStudent.roomId)?.locations || []).map((loc: string) => {
-                          const isOccupied = rooms.find(r => r.id === newStudent.roomId)?.students?.some((s: any) => s.locationInRoom === loc);
+                          const isOccupied = rooms.find(r => r.id === newStudent.roomId)?.students?.some((s: any) => s.locationInRoom === loc && !s.hasLeft);
                           return (
                             <option key={loc} value={loc} disabled={isOccupied}>
                               {loc} {isOccupied ? "(Occupied)" : ""}
@@ -982,10 +982,11 @@ export default function StudentsAdminPage() {
                         value={editForm.roomId}
                         onChange={(e) => setEditForm({ ...editForm, roomId: e.target.value, locationInRoom: "" })}
                         className={INPUT_CLASS}
+                        disabled={editForm.hasLeft}
                       >
                         <option value="">No Room (Unassigned)</option>
                         {rooms.map(room => {
-                          const occ = room.students?.length || 0;
+                          const occ = room.students?.filter((s: any) => !s.hasLeft).length || 0;
                           return (
                             <option key={room.id} value={room.id} disabled={occ >= room.capacity && room.id !== selectedStudent.roomId}>
                               Room {room.roomNumber} ({room.type.replace("_", " ")}) — {occ}/{room.capacity} occupied
@@ -993,6 +994,9 @@ export default function StudentsAdminPage() {
                           );
                         })}
                       </select>
+                      {editForm.hasLeft && (
+                        <p className="text-[11px] text-red-400/80 italic mt-1">Room assignment is disabled for students who have left.</p>
+                      )}
                     </div>
                     <div className="space-y-1.5">
                       <label className="text-sm font-medium text-muted-foreground">Location in Room</label>
@@ -1000,11 +1004,11 @@ export default function StudentsAdminPage() {
                         value={editForm.locationInRoom}
                         onChange={(e) => setEditForm({ ...editForm, locationInRoom: e.target.value })}
                         className={INPUT_CLASS}
-                        disabled={!editForm.roomId}
+                        disabled={!editForm.roomId || editForm.hasLeft}
                       >
                         <option value="">Select Location</option>
                         {editForm.roomId && (rooms.find(r => r.id === editForm.roomId)?.locations || []).map((loc: string) => {
-                          const isOccupied = rooms.find(r => r.id === editForm.roomId)?.students?.some((s: any) => s.locationInRoom === loc && s.id !== selectedStudent.id);
+                          const isOccupied = rooms.find(r => r.id === editForm.roomId)?.students?.some((s: any) => s.locationInRoom === loc && s.id !== selectedStudent.id && !s.hasLeft);
                           return (
                             <option key={loc} value={loc} disabled={isOccupied}>
                               {loc} {isOccupied ? "(Occupied)" : ""}
@@ -1012,7 +1016,7 @@ export default function StudentsAdminPage() {
                           );
                         })}
                       </select>
-                      {!editForm.roomId && (
+                      {!editForm.roomId && !editForm.hasLeft && (
                         <p className="text-[11px] text-muted-foreground/60 italic mt-1">Assign a room first to select a location.</p>
                       )}
                     </div>
@@ -1201,7 +1205,7 @@ export default function StudentsAdminPage() {
                   >
                     <option value="">No Room (Unassign)</option>
                     {rooms.map((room) => {
-                      const occ = room.students?.length || 0;
+                      const occ = room.students?.filter((s: any) => !s.hasLeft).length || 0;
                       return (
                         <option key={room.id} value={room.id} disabled={occ >= room.capacity && room.id !== selectedStudent.roomId}>
                           Room {room.roomNumber} ({room.type.replace("_", " ")}) — {occ}/{room.capacity} occupied
@@ -1221,7 +1225,7 @@ export default function StudentsAdminPage() {
                     >
                       <option value="">Select Location</option>
                       {(rooms.find(r => r.id === selectedRoomId)?.locations || []).map((loc: string) => {
-                        const isOccupied = rooms.find(r => r.id === selectedRoomId)?.students?.some((s: any) => s.locationInRoom === loc && s.id !== selectedStudent.id);
+                        const isOccupied = rooms.find(r => r.id === selectedRoomId)?.students?.some((s: any) => s.locationInRoom === loc && s.id !== selectedStudent.id && !s.hasLeft);
                         return (
                           <option key={loc} value={loc} disabled={isOccupied}>
                             {loc} {isOccupied ? "(Occupied)" : ""}

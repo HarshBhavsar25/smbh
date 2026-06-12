@@ -95,6 +95,7 @@ export default function AdminApplicationsPage() {
             .signature-container { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 25px; page-break-inside: avoid; }
             .signature-box { text-align: center; width: 200px; }
             .signature-img { width: 150px; height: 50px; object-fit: contain; border-bottom: 1px solid #000; margin-bottom: 4px; }
+            .signature-img.drawn { filter: invert(1); }
             .signature-label { font-size: 10px; text-transform: uppercase; font-weight: bold; color: #555; }
             .page-break { page-break-before: always; }
           </style>
@@ -193,7 +194,7 @@ export default function AdminApplicationsPage() {
               <p><strong>Date:</strong> ${app.agreementDate}</p>
             </div>
             <div class="signature-box">
-              ${app.studentSignatureUrl ? `<img src="${app.studentSignatureUrl}" class="signature-img" />` : `<div style="height:50px;"></div>`}
+              ${app.studentSignatureUrl ? `<img src="${app.studentSignatureUrl}" class="signature-img ${app.studentSignatureUrl.startsWith("data:image") ? "drawn" : ""}" />` : `<div style="height:50px;"></div>`}
               <div class="signature-label">Student Signature</div>
             </div>
           </div>
@@ -223,7 +224,7 @@ export default function AdminApplicationsPage() {
               <p><strong>Handover Date:</strong> ${app.amenityDate}</p>
             </div>
             <div class="signature-box">
-              ${app.amenityStudentSignatureUrl ? `<img src="${app.amenityStudentSignatureUrl}" class="signature-img" />` : `<div style="height:50px;"></div>`}
+              ${app.amenityStudentSignatureUrl ? `<img src="${app.amenityStudentSignatureUrl}" class="signature-img ${app.amenityStudentSignatureUrl.startsWith("data:image") ? "drawn" : ""}" />` : `<div style="height:50px;"></div>`}
               <div class="signature-label">Student Confirmation Signature</div>
             </div>
           </div>
@@ -247,7 +248,7 @@ export default function AdminApplicationsPage() {
               <p><strong>Date:</strong> ${app.ackParentDate}</p>
             </div>
             <div class="signature-box">
-              ${app.ackParentSignatureUrl ? `<img src="${app.ackParentSignatureUrl}" class="signature-img" />` : `<div style="height:50px;"></div>`}
+              ${app.ackParentSignatureUrl ? `<img src="${app.ackParentSignatureUrl}" class="signature-img ${app.ackParentSignatureUrl.startsWith("data:image") ? "drawn" : ""}" />` : `<div style="height:50px;"></div>`}
               <div class="signature-label">Parent / Guardian Signature</div>
             </div>
           </div>

@@ -1150,9 +1150,10 @@ export default function FillApplicationFormPage() {
                   <div className="space-y-2">
                     <label className={LABEL_CLASS}>Student Digital Signature *</label>
                     <SignaturePad 
-                      onChange={(base64) => setFormData({ ...formData, studentSignatureUrl: base64 || "" })}
+                      onChange={(url) => setFormData({ ...formData, studentSignatureUrl: url || "" })}
                       value={formData.studentSignatureUrl}
                       placeholder="Use your finger/pointer to sign inside this box..."
+                      uploadEndpoint={`${API}/application-forms/upload`}
                     />
                   </div>
 
@@ -1302,9 +1303,10 @@ export default function FillApplicationFormPage() {
                     <div className="space-y-2">
                       <label className={LABEL_CLASS}>Student Signature (Handover confirmation) *</label>
                       <SignaturePad 
-                        onChange={(base64) => setFormData({ ...formData, amenityStudentSignatureUrl: base64 || "" })}
+                        onChange={(url) => setFormData({ ...formData, amenityStudentSignatureUrl: url || "" })}
                         value={formData.amenityStudentSignatureUrl}
                         placeholder="Draw your signature..."
+                        uploadEndpoint={`${API}/application-forms/upload`}
                       />
                     </div>
 
@@ -1392,9 +1394,10 @@ export default function FillApplicationFormPage() {
                     <div className="space-y-2">
                       <label className={LABEL_CLASS}>Parent / Guardian Digital Signature *</label>
                       <SignaturePad 
-                        onChange={(base64) => setFormData({ ...formData, ackParentSignatureUrl: base64 || "" })}
+                        onChange={(url) => setFormData({ ...formData, ackParentSignatureUrl: url || "" })}
                         value={formData.ackParentSignatureUrl}
                         placeholder="Parent signs here..."
+                        uploadEndpoint={`${API}/application-forms/upload`}
                       />
                     </div>
 

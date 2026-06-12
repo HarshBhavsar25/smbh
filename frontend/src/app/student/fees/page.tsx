@@ -20,6 +20,8 @@ export default function StudentFeesPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  const [hostelFee, setHostelFee] = useState("5000");
+  const [lightBill, setLightBill] = useState("300");
   const [amount, setAmount] = useState("5300");
   const [utr, setUtr] = useState("");
   const [sendingAccountName, setSendingAccountName] = useState("");
@@ -44,12 +46,12 @@ export default function StudentFeesPage() {
   }, []);
 
   useEffect(() => {
-    const rent = 5000;
-    const light = 300;
+    const rent = Number(hostelFee) || 0;
+    const light = Number(lightBill) || 0;
     const laundryVal = Number(laundry) || 0;
     const balanceVal = student?.balanceFee || 0;
     setAmount(String(rent + light + laundryVal + balanceVal));
-  }, [laundry, student]);
+  }, [hostelFee, lightBill, laundry, student]);
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -122,8 +124,8 @@ export default function StudentFeesPage() {
     try {
       let receiptUrl = null;
 
-      // 1. Upload screenshot if exists
-      if (file) {
+      // 1. Upload screenshot if exists and mode is not cash
+      if (file && paymentMode !== "Cash") {
         const formData = new FormData();
         formData.append("file", file);
 
@@ -153,14 +155,14 @@ export default function StudentFeesPage() {
         body: JSON.stringify({
           studentId,
           amount: Number(amount),
-          utr,
-          receiptUrl,
+          utr: paymentMode === "Cash" ? "CASH" : utr,
+          receiptUrl: paymentMode === "Cash" ? null : receiptUrl,
           status: "PENDING",
-          hostelFee: 5000,
-          lightBill: 300,
+          hostelFee: Number(hostelFee) || 0,
+          lightBill: Number(lightBill) || 0,
           laundry: Number(laundry) || 0,
           balanceFee: student?.balanceFee || 0,
-          sendingAccountName,
+          sendingAccountName: paymentMode === "Cash" ? "CASH" : sendingAccountName,
           hostelFeeMonth,
           lightBillMonth,
           laundryMonth,
@@ -177,6 +179,8 @@ export default function StudentFeesPage() {
 
       setSuccess("Payment registered successfully! Admin will verify and approve shortly.");
       const nextBalance = student?.balanceFee || 0;
+      setHostelFee("5000");
+      setLightBill("300");
       setAmount(String(5000 + 300 + 0 + nextBalance));
       setUtr("");
       setSendingAccountName("");
@@ -216,11 +220,11 @@ export default function StudentFeesPage() {
                 <div className="space-y-3">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-white/60">Hostel Rent:</span>
-                    <span className="text-white font-semibold">₹5,000</span>
+                    <span className="text-white font-semibold">₹{(Number(hostelFee) || 0).toLocaleString("en-IN")}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-white/60">Light Bill:</span>
-                    <span className="text-white font-semibold">₹300</span>
+                    <span className="text-white font-semibold">₹{(Number(lightBill) || 0).toLocaleString("en-IN")}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-white/60">Laundry Charges:</span>
@@ -232,7 +236,7 @@ export default function StudentFeesPage() {
                   </div>
                   <div className="border-t border-white/5 pt-3 flex items-center justify-between font-bold text-base text-primary">
                     <span>Total Payment:</span>
-                    <span>₹{(5000 + 300 + (Number(laundry) || 0) + (student?.balanceFee || 0)).toLocaleString("en-IN")}</span>
+                    <span>₹{((Number(hostelFee) || 0) + (Number(lightBill) || 0) + (Number(laundry) || 0) + (student?.balanceFee || 0)).toLocaleString("en-IN")}</span>
                   </div>
                 </div>
 
@@ -284,6 +288,35 @@ export default function StudentFeesPage() {
               )}
 
               <form onSubmit={handleSubmitPayment} className="space-y-4">
+                {/* Dynamic amounts inputs */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-muted-foreground">Hostel Rent (₹) *</label>
+                    <input
+                      type="number"
+                      min={0}
+                      required
+                      value={hostelFee}
+                      onChange={(e) => setHostelFee(e.target.value)}
+                      className="w-full bg-[#16161a] border border-white/5 rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-1 focus:ring-primary/50 text-sm"
+                      placeholder="e.g. 5000"
+                    />
+                  </div>
+                  
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-muted-foreground">Light Bill (₹) *</label>
+                    <input
+                      type="number"
+                      min={0}
+                      required
+                      value={lightBill}
+                      onChange={(e) => setLightBill(e.target.value)}
+                      className="w-full bg-[#16161a] border border-white/5 rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-1 focus:ring-primary/50 text-sm"
+                      placeholder="e.g. 300"
+                    />
+                  </div>
+                </div>
+
                 {/* Month selectors for components */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
@@ -395,61 +428,65 @@ export default function StudentFeesPage() {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-muted-foreground">UTR / Transaction ID *</label>
-                  <input
-                    type="text"
-                    required
-                    value={utr}
-                    onChange={(e) => setUtr(e.target.value)}
-                    className="w-full bg-[#16161a] border border-white/5 rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-1 focus:ring-primary/50 text-sm"
-                    placeholder="Enter 12-digit UTR or Txn ID"
-                  />
-                </div>
+                {paymentMode !== "Cash" && (
+                  <>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-muted-foreground">UTR / Transaction ID *</label>
+                      <input
+                        type="text"
+                        required={paymentMode !== "Cash"}
+                        value={utr}
+                        onChange={(e) => setUtr(e.target.value)}
+                        className="w-full bg-[#16161a] border border-white/5 rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-1 focus:ring-primary/50 text-sm"
+                        placeholder="Enter 12-digit UTR or Txn ID"
+                      />
+                    </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-muted-foreground">Student Name / UPI Account Holder Name *</label>
-                  <input
-                    type="text"
-                    required
-                    value={sendingAccountName}
-                    onChange={(e) => setSendingAccountName(e.target.value)}
-                    className="w-full bg-[#16161a] border border-white/5 rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-1 focus:ring-primary/50 text-sm"
-                    placeholder="Account Holder's Name"
-                  />
-                </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-muted-foreground">Student Name / UPI Account Holder Name *</label>
+                      <input
+                        type="text"
+                        required={paymentMode !== "Cash"}
+                        value={sendingAccountName}
+                        onChange={(e) => setSendingAccountName(e.target.value)}
+                        className="w-full bg-[#16161a] border border-white/5 rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-1 focus:ring-primary/50 text-sm"
+                        placeholder="Account Holder's Name"
+                      />
+                    </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-muted-foreground">Upload Screenshot</label>
-                  <div 
-                    onClick={() => fileInputRef.current?.click()}
-                    className="border-2 border-dashed border-white/10 hover:border-primary/50 transition-colors rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer bg-[#16161a]"
-                  >
-                    <input
-                      type="file"
-                      ref={fileInputRef}
-                      onChange={handleFileChange}
-                      accept="image/*"
-                      className="hidden"
-                    />
-                    
-                    {filePreview ? (
-                      <div className="relative w-full aspect-video rounded-lg overflow-hidden">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={filePreview} alt="Preview" className="w-full h-full object-cover" />
-                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                          <p className="text-xs text-white font-medium">Change Image</p>
-                        </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-muted-foreground">Upload Screenshot</label>
+                      <div 
+                        onClick={() => fileInputRef.current?.click()}
+                        className="border-2 border-dashed border-white/10 hover:border-primary/50 transition-colors rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer bg-[#16161a]"
+                      >
+                        <input
+                          type="file"
+                          ref={fileInputRef}
+                          onChange={handleFileChange}
+                          accept="image/*"
+                          className="hidden"
+                        />
+                        
+                        {filePreview ? (
+                          <div className="relative w-full aspect-video rounded-lg overflow-hidden">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={filePreview} alt="Preview" className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                              <p className="text-xs text-white font-medium">Change Image</p>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <Upload size={24} className="text-muted-foreground mb-2" />
+                            <p className="text-xs text-muted-foreground font-medium text-center">Click to upload screenshot</p>
+                            <p className="text-[10px] text-white/20 mt-1">PNG, JPG, JPEG up to 5MB</p>
+                          </>
+                        )}
                       </div>
-                    ) : (
-                      <>
-                        <Upload size={24} className="text-muted-foreground mb-2" />
-                        <p className="text-xs text-muted-foreground font-medium text-center">Click to upload screenshot</p>
-                        <p className="text-[10px] text-white/20 mt-1">PNG, JPG, JPEG up to 5MB</p>
-                      </>
-                    )}
-                  </div>
-                </div>
+                    </div>
+                  </>
+                )}
 
                 <button
                   type="submit"

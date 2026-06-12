@@ -257,10 +257,12 @@ export default function ReceiptModal({ isOpen, onClose, payment }: ReceiptModalP
                 <p className="font-bold">◆ Receipt Details :-</p>
                 <div className="pl-4 space-y-0.5">
                   <p>Mode Of Payment :- <span className="font-semibold">{payment.paymentMode || "Online"}</span></p>
-                  {payment.sendingAccountName && (
+                  {payment.paymentMode !== "Cash" && payment.sendingAccountName && (
                     <p>Account Holder Name :- <span className="font-semibold">{payment.sendingAccountName}</span></p>
                   )}
-                  <p>Transaction No (UTR) :- <span className="font-semibold">{utr}</span></p>
+                  {payment.paymentMode !== "Cash" && (
+                    <p>Transaction No (UTR) :- <span className="font-semibold">{utr}</span></p>
+                  )}
                   <p>Transaction Date :- <span className="font-semibold">{txnDate}</span></p>
                 </div>
               </div>

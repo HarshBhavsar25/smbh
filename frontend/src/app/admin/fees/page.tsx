@@ -180,8 +180,8 @@ export default function FeesAdminPage() {
           studentId: formData.studentId,
           amount: calculatedAmount,
           status: formData.status,
-          utr: formData.utr || "OFFLINE_RECORD",
-          sendingAccountName: formData.sendingAccountName || "Cash / Direct Bank Transfer",
+          utr: formData.paymentMode === "Cash" ? "CASH" : (formData.utr || "OFFLINE_RECORD"),
+          sendingAccountName: formData.paymentMode === "Cash" ? "CASH" : (formData.sendingAccountName || "Cash / Direct Bank Transfer"),
           hostelFee: hFee,
           lightBill: lBill,
           laundry: laund,
@@ -836,27 +836,31 @@ export default function FeesAdminPage() {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-muted-foreground">Student Name / UPI Account Holder Name</label>
-                  <input 
-                    type="text"
-                    value={formData.sendingAccountName}
-                    onChange={(e) => setFormData({...formData, sendingAccountName: e.target.value})}
-                    className="w-full bg-[#16161a] border border-white/5 rounded-xl py-2.5 px-4 text-sm text-white focus:outline-none focus:ring-1 focus:ring-primary/50"
-                    placeholder="e.g. Rahul Sharma"
-                  />
-                </div>
+                {formData.paymentMode !== "Cash" && (
+                  <>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-muted-foreground">Student Name / UPI Account Holder Name</label>
+                      <input 
+                        type="text"
+                        value={formData.sendingAccountName}
+                        onChange={(e) => setFormData({...formData, sendingAccountName: e.target.value})}
+                        className="w-full bg-[#16161a] border border-white/5 rounded-xl py-2.5 px-4 text-sm text-white focus:outline-none focus:ring-1 focus:ring-primary/50"
+                        placeholder="e.g. Rahul Sharma"
+                      />
+                    </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-muted-foreground">UTR / Transaction ID (Optional)</label>
-                  <input 
-                    type="text"
-                    value={formData.utr}
-                    onChange={(e) => setFormData({...formData, utr: e.target.value})}
-                    className="w-full bg-[#16161a] border border-white/5 rounded-xl py-2.5 px-4 text-sm text-white focus:outline-none focus:ring-1 focus:ring-primary/50"
-                    placeholder="e.g. 123456789012"
-                  />
-                </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-muted-foreground">UTR / Transaction ID (Optional)</label>
+                      <input 
+                        type="text"
+                        value={formData.utr}
+                        onChange={(e) => setFormData({...formData, utr: e.target.value})}
+                        className="w-full bg-[#16161a] border border-white/5 rounded-xl py-2.5 px-4 text-sm text-white focus:outline-none focus:ring-1 focus:ring-primary/50"
+                        placeholder="e.g. 123456789012"
+                      />
+                    </div>
+                  </>
+                )}
 
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-muted-foreground">Payment Status</label>
@@ -940,14 +944,18 @@ export default function FeesAdminPage() {
                   <span className="text-xs text-muted-foreground uppercase block">Resident Name</span>
                   <span className="font-semibold">{selectedPaymentDetails.student?.fullName || "N/A"}</span>
                 </div>
-                <div>
-                  <span className="text-xs text-muted-foreground uppercase block">Sender Account Name</span>
-                  <span className="font-semibold">{selectedPaymentDetails.sendingAccountName || "N/A"}</span>
-                </div>
-                <div>
-                  <span className="text-xs text-muted-foreground uppercase block">UTR / Transaction ID</span>
-                  <code className="text-xs bg-white/5 px-2 py-0.5 rounded">{selectedPaymentDetails.utr || "N/A"}</code>
-                </div>
+                {selectedPaymentDetails.paymentMode !== "Cash" && selectedPaymentDetails.sendingAccountName && (
+                  <div>
+                    <span className="text-xs text-muted-foreground uppercase block">Sender Account Name</span>
+                    <span className="font-semibold">{selectedPaymentDetails.sendingAccountName}</span>
+                  </div>
+                )}
+                {selectedPaymentDetails.paymentMode !== "Cash" && (
+                  <div>
+                    <span className="text-xs text-muted-foreground uppercase block">UTR / Transaction ID</span>
+                    <code className="text-xs bg-white/5 px-2 py-0.5 rounded">{selectedPaymentDetails.utr || "N/A"}</code>
+                  </div>
+                )}
 
                 <div className="border-t border-white/5 pt-4 space-y-2.5">
                   <div className="flex justify-between">

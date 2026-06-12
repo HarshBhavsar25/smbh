@@ -58,6 +58,9 @@ export class StudentsService {
       if (profileData.balanceFee !== undefined) {
         profileData.balanceFee = Number(profileData.balanceFee);
       }
+      if (profileData.laundryOpted !== undefined) {
+        profileData.laundryOpted = profileData.laundryOpted === true || profileData.laundryOpted === 'true';
+      }
 
       // Prevent reactivating/unmarking a student who has already left
       if (student.hasLeft && (profileData.hasLeft === false || profileData.hasLeft === 'false')) {

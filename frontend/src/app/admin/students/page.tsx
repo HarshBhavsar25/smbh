@@ -35,6 +35,7 @@ const emptyStudent = {
   securityDeposit: "",
   refundAmount: "",
   balanceFee: "0",
+  laundryOpted: false,
   hasLeft: false,
 };
 
@@ -81,6 +82,7 @@ export default function StudentsAdminPage() {
     securityDeposit: "",
     refundAmount: "",
     balanceFee: "0",
+    laundryOpted: false,
     hasLeft: false,
   });
 
@@ -162,6 +164,7 @@ export default function StudentsAdminPage() {
       securityDeposit: student.securityDeposit !== undefined ? String(student.securityDeposit) : "",
       refundAmount: student.refundAmount !== undefined ? String(student.refundAmount) : "",
       balanceFee: student.balanceFee !== undefined ? String(student.balanceFee) : "0",
+      laundryOpted: student.laundryOpted || false,
       hasLeft: student.hasLeft || false,
     });
     setError("");
@@ -198,6 +201,7 @@ export default function StudentsAdminPage() {
         securityDeposit: Number(editForm.securityDeposit) || 0,
         refundAmount: Number(editForm.refundAmount) || 0,
         balanceFee: Number(editForm.balanceFee) || 0,
+        laundryOpted: editForm.laundryOpted,
         hasLeft: editForm.hasLeft,
       };
       if (editForm.newPassword.trim()) {
@@ -736,6 +740,18 @@ export default function StudentsAdminPage() {
                         placeholder="e.g. 0"
                       />
                     </div>
+                    <div className="flex items-center gap-2 pt-6">
+                      <input
+                        type="checkbox"
+                        id="addLaundryOpted"
+                        checked={newStudent.laundryOpted}
+                        onChange={(e) => setNewStudent({ ...newStudent, laundryOpted: e.target.checked })}
+                        className="w-4 h-4 rounded border-white/5 bg-[#16161a] text-primary focus:ring-primary/50"
+                      />
+                      <label htmlFor="addLaundryOpted" className="text-sm font-medium text-white cursor-pointer select-none">
+                        Opt for Laundry Services
+                      </label>
+                    </div>
                   </div>
                 </div>
 
@@ -1177,6 +1193,18 @@ export default function StudentsAdminPage() {
                         <p className="text-[11px] text-muted-foreground/60 italic mt-1">Mark student as left to enter refund amount.</p>
                       )}
                     </div>
+                    <div className="flex items-center gap-2 pt-6">
+                      <input
+                        type="checkbox"
+                        id="editLaundryOpted"
+                        checked={editForm.laundryOpted}
+                        onChange={(e) => setEditForm({ ...editForm, laundryOpted: e.target.checked })}
+                        className="w-4 h-4 rounded border-white/5 bg-[#16161a] text-primary focus:ring-primary/50"
+                      />
+                      <label htmlFor="editLaundryOpted" className="text-sm font-medium text-white cursor-pointer select-none">
+                        Opt for Laundry Services
+                      </label>
+                    </div>
                   </div>
                   <div className="mt-4">
                     <label className="flex items-center gap-3 cursor-pointer group">
@@ -1386,6 +1414,12 @@ export default function StudentsAdminPage() {
                         <span className="text-xs text-muted-foreground block">Status</span>
                         <span className={`font-semibold text-xs px-2.5 py-0.5 rounded-full inline-block ${selectedStudent.hasLeft ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'bg-green-500/10 text-green-400 border border-green-500/20'}`}>
                           {selectedStudent.hasLeft ? 'Left Hostel' : 'Active'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-xs text-muted-foreground block">Laundry Services</span>
+                        <span className={`font-semibold text-xs px-2.5 py-0.5 rounded-full inline-block ${selectedStudent.laundryOpted ? 'bg-primary/10 text-primary border border-primary/20' : 'bg-white/10 text-muted-foreground border border-white/10'}`}>
+                          {selectedStudent.laundryOpted ? 'Opted In' : 'Opted Out'}
                         </span>
                       </div>
                       {selectedStudent.hasLeft && (

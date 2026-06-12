@@ -69,9 +69,26 @@ export default function StudentFeesPage() {
     try {
       // Fetch student profile
       const studRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/students/${studentId}`, { headers });
+      let studData: any = null;
       if (studRes.ok) {
-        const studData = await studRes.json();
+        studData = await studRes.json();
         setStudent(studData);
+      }
+
+      // Fetch settings
+      const settingsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/fees/settings`, { headers });
+      let settingsData = { hostelRentRate: 5000, lightBillRate: 300, laundryRate: 200 };
+      if (settingsRes.ok) {
+        settingsData = await settingsRes.json();
+      }
+
+      // Initialize inputs based on rates and laundry opting status
+      setHostelFee(String(settingsData.hostelRentRate));
+      setLightBill(String(settingsData.lightBillRate));
+      if (studData?.laundryOpted) {
+        setLaundry(String(settingsData.laundryRate));
+      } else {
+        setLaundry("0");
       }
 
       // Fetch QR Code
@@ -160,12 +177,12 @@ export default function StudentFeesPage() {
           status: "PENDING",
           hostelFee: Number(hostelFee) || 0,
           lightBill: Number(lightBill) || 0,
-          laundry: Number(laundry) || 0,
+          laundry: student?.laundryOpted ? (Number(laundry) || 0) : 0,
           balanceFee: student?.balanceFee || 0,
           sendingAccountName: paymentMode === "Cash" ? "CASH" : sendingAccountName,
           hostelFeeMonth,
           lightBillMonth,
-          laundryMonth,
+          laundryMonth: student?.laundryOpted ? laundryMonth : null,
           balanceFeeMonth,
           paymentMode,
           paymentDate: new Date(transactionDate).toISOString(),
@@ -342,30 +359,32 @@ export default function StudentFeesPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-muted-foreground">Laundry Charges (₹)</label>
-                    <input
-                      type="number"
-                      min={0}
-                      value={laundry}
-                      onChange={(e) => setLaundry(e.target.value)}
-                      className="w-full bg-[#16161a] border border-white/5 rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-1 focus:ring-primary/50 text-sm"
-                      placeholder="e.g. 0"
-                    />
+                {student?.laundryOpted && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-muted-foreground">Laundry Charges (₹)</label>
+                      <input
+                        type="number"
+                        min={0}
+                        value={laundry}
+                        onChange={(e) => setLaundry(e.target.value)}
+                        className="w-full bg-[#16161a] border border-white/5 rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-1 focus:ring-primary/50 text-sm"
+                        placeholder="e.g. 0"
+                      />
+                    </div>
+                    
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-muted-foreground">Laundry for Month</label>
+                      <select
+                        value={laundryMonth}
+                        onChange={(e) => setLaundryMonth(e.target.value)}
+                        className="w-full bg-[#16161a] border border-white/5 rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-1 focus:ring-primary/50 text-sm"
+                      >
+                        {MONTHS.map(m => <option key={m} value={m}>{m}</option>)}
+                      </select>
+                    </div>
                   </div>
-                  
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-muted-foreground">Laundry for Month</label>
-                    <select
-                      value={laundryMonth}
-                      onChange={(e) => setLaundryMonth(e.target.value)}
-                      className="w-full bg-[#16161a] border border-white/5 rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-1 focus:ring-primary/50 text-sm"
-                    >
-                      {MONTHS.map(m => <option key={m} value={m}>{m}</option>)}
-                    </select>
-                  </div>
-                </div>
+                )}
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">

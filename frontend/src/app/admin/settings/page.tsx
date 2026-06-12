@@ -19,6 +19,14 @@ export default function SettingsAdminPage() {
   const [error, setError] = useState("");
   const [profileImage, setProfileImage] = useState<string | null>(null);
 
+  // Fee rates configuration states
+  const [hostelRentRate, setHostelRentRate] = useState("5000");
+  const [lightBillRate, setLightBillRate] = useState("300");
+  const [laundryRate, setLaundryRate] = useState("200");
+  const [isUpdatingSettings, setIsUpdatingSettings] = useState(false);
+  const [settingsSuccess, setSettingsSuccess] = useState("");
+  const [settingsError, setSettingsError] = useState("");
+
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (token) {
@@ -29,6 +37,19 @@ export default function SettingsAdminPage() {
       .then(data => {
         if (data && data.profileImage) {
           setProfileImage(data.profileImage);
+        }
+      })
+      .catch(console.error);
+
+      fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/fees/settings`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data) {
+          setHostelRentRate(String(data.hostelRentRate || "5000"));
+          setLightBillRate(String(data.lightBillRate || "300"));
+          setLaundryRate(String(data.laundryRate || "200"));
         }
       })
       .catch(console.error);
@@ -112,6 +133,40 @@ export default function SettingsAdminPage() {
       setError(err.message);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleUpdateSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSettingsError("");
+    setSettingsSuccess("");
+    setIsUpdatingSettings(true);
+    const token = localStorage.getItem("token");
+
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/fees/settings`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          hostelRentRate: Number(hostelRentRate),
+          lightBillRate: Number(lightBillRate),
+          laundryRate: Number(laundryRate)
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || "Failed to update fee settings");
+      }
+
+      setSettingsSuccess("Fee settings updated successfully!");
+    } catch (err: any) {
+      setSettingsError(err.message || "Something went wrong updating settings");
+    } finally {
+      setIsUpdatingSettings(false);
     }
   };
 
@@ -222,6 +277,77 @@ export default function SettingsAdminPage() {
                   className="px-6 py-3 rounded-xl bg-primary hover:bg-primary/90 transition-all text-primary-foreground font-semibold text-sm flex items-center gap-2"
                 >
                   {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : "Update Password"}
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <div className="glass-card p-8 rounded-3xl border border-white/5 bg-[#121214] shadow-xl">
+            <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+              <ShieldCheck size={20} className="text-primary" /> Configure Default Fee Rates
+            </h3>
+
+            {settingsError && (
+              <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-sm flex items-center gap-2">
+                <AlertTriangle size={16} /> {settingsError}
+              </div>
+            )}
+
+            {settingsSuccess && (
+              <div className="mb-6 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-sm flex items-center gap-2">
+                <Check size={16} /> {settingsSuccess}
+              </div>
+            )}
+
+            <form onSubmit={handleUpdateSettings} className="space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-muted-foreground">Hostel Rent Rate (₹) *</label>
+                  <input 
+                    type="number"
+                    min={0}
+                    required
+                    value={hostelRentRate}
+                    onChange={(e) => setHostelRentRate(e.target.value)}
+                    className="w-full bg-[#16161a] border border-white/5 rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-1 focus:ring-primary/50"
+                    placeholder="e.g. 5000"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-muted-foreground">Light Bill Rate (₹) *</label>
+                  <input 
+                    type="number"
+                    min={0}
+                    required
+                    value={lightBillRate}
+                    onChange={(e) => setLightBillRate(e.target.value)}
+                    className="w-full bg-[#16161a] border border-white/5 rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-1 focus:ring-primary/50"
+                    placeholder="e.g. 300"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-muted-foreground">Laundry Rate (₹) *</label>
+                  <input 
+                    type="number"
+                    min={0}
+                    required
+                    value={laundryRate}
+                    onChange={(e) => setLaundryRate(e.target.value)}
+                    className="w-full bg-[#16161a] border border-white/5 rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-1 focus:ring-primary/50"
+                    placeholder="e.g. 200"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-4">
+                <button 
+                  type="submit"
+                  disabled={isUpdatingSettings}
+                  className="px-6 py-3 rounded-xl bg-primary hover:bg-primary/90 transition-all text-primary-foreground font-semibold text-sm flex items-center gap-2"
+                >
+                  {isUpdatingSettings ? <Loader2 className="animate-spin" size={18} /> : "Save Settings"}
                 </button>
               </div>
             </form>

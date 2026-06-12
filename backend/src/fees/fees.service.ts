@@ -89,8 +89,22 @@ export class FeesService {
       data: { status: 'PAID' },
     });
 
-    const currentBalance = payment.student?.balanceFee || 0;
-    const newBalance = Math.max(0, currentBalance - (payment.balanceFee || 0));
+    let newBalance = payment.student?.balanceFee || 0;
+    if (payment.paymentType === 'HOSTEL_FEE') {
+      const settings = await this.getSettings();
+      const rentRate = settings.hostelRentRate;
+      const lightRate = settings.lightBillRate;
+      const laundryRate = payment.student?.laundryOpted ? settings.laundryRate : 0;
+
+      const unpaidRent = Math.max(0, rentRate - (payment.hostelFee || 0));
+      const unpaidLight = Math.max(0, lightRate - (payment.lightBill || 0));
+      const unpaidLaundry = Math.max(0, laundryRate - (payment.laundry || 0));
+      const unpaidBalance = Math.max(0, (payment.student?.balanceFee || 0) - (payment.balanceFee || 0));
+
+      newBalance = unpaidBalance + unpaidRent + unpaidLight + unpaidLaundry;
+    } else {
+      newBalance = Math.max(0, (payment.student?.balanceFee || 0) - (payment.amount || 0));
+    }
 
     await this.prisma.studentProfile.update({
       where: { id: payment.studentId },
@@ -149,5 +163,51 @@ export class FeesService {
       update: { value: url },
       create: { key: 'qr_code_url', value: url },
     });
+  }
+
+  async getSettings() {
+    const settings = await this.prisma.systemSetting.findMany({
+      where: {
+        key: { in: ['hostel_rent_rate', 'light_bill_rate', 'laundry_rate'] }
+      }
+    });
+
+    const getVal = (key: string, defaultVal: string) => {
+      const found = settings.find(s => s.key === key);
+      return found ? found.value : defaultVal;
+    };
+
+    return {
+      hostelRentRate: Number(getVal('hostel_rent_rate', '5000')),
+      lightBillRate: Number(getVal('light_bill_rate', '300')),
+      laundryRate: Number(getVal('laundry_rate', '200')),
+    };
+  }
+
+  async updateSettings(data: any) {
+    const promises = [];
+    if (data.hostelRentRate !== undefined) {
+      promises.push(this.prisma.systemSetting.upsert({
+        where: { key: 'hostel_rent_rate' },
+        update: { value: String(data.hostelRentRate) },
+        create: { key: 'hostel_rent_rate', value: String(data.hostelRentRate) }
+      }));
+    }
+    if (data.lightBillRate !== undefined) {
+      promises.push(this.prisma.systemSetting.upsert({
+        where: { key: 'light_bill_rate' },
+        update: { value: String(data.lightBillRate) },
+        create: { key: 'light_bill_rate', value: String(data.lightBillRate) }
+      }));
+    }
+    if (data.laundryRate !== undefined) {
+      promises.push(this.prisma.systemSetting.upsert({
+        where: { key: 'laundry_rate' },
+        update: { value: String(data.laundryRate) },
+        create: { key: 'laundry_rate', value: String(data.laundryRate) }
+      }));
+    }
+    await Promise.all(promises);
+    return this.getSettings();
   }
 }

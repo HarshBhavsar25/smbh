@@ -83,6 +83,7 @@ model StudentProfile {
   securityDeposit Float    @default(0)
   refundAmount    Float    @default(0)
   balanceFee    Float    @default(0)
+  laundryOpted  Boolean  @default(false)
   hasLeft         Boolean  @default(false)
   leftDate        DateTime?
   

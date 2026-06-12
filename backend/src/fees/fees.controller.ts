@@ -51,6 +51,19 @@ export class FeesController {
     return this.feesService.findAll();
   }
 
+  @Get('settings')
+  getSettings() {
+    return this.feesService.getSettings();
+  }
+
+  @Post('settings')
+  updateSettings(@Req() req: any, @Body() body: any) {
+    if (req.user.role !== 'ADMIN') {
+      throw new ForbiddenException('Only admin can update settings');
+    }
+    return this.feesService.updateSettings(body);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.feesService.findOne(id);

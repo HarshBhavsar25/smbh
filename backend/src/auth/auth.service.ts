@@ -80,6 +80,7 @@ export class AuthService {
           yearOfStudyOther: data.yearOfStudyOther,
           securityDeposit: data.securityDeposit ? Number(data.securityDeposit) : 0,
           balanceFee: data.balanceFee ? Number(data.balanceFee) : 0,
+          laundryOpted: data.laundryOpted === true || data.laundryOpted === 'true',
         },
       });
     }

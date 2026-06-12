@@ -7,11 +7,14 @@ import {
 } from "lucide-react";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-const MONTHLY_FEE = 5300;
-
 export default function ReportsPage() {
   const [students, setStudents] = useState<any[]>([]);
   const [payments, setPayments] = useState<any[]>([]);
+  const [feeSettings, setFeeSettings] = useState({
+    hostelRentRate: 5000,
+    lightBillRate: 300,
+    laundryRate: 200
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
 
@@ -37,16 +40,19 @@ export default function ReportsPage() {
     const headers = { Authorization: `Bearer ${token}` };
 
     try {
-      const [studRes, payRes] = await Promise.all([
+      const [studRes, payRes, settingsRes] = await Promise.all([
         fetch(`${API}/students`, { headers }),
-        fetch(`${API}/fees`, { headers })
+        fetch(`${API}/fees`, { headers }),
+        fetch(`${API}/fees/settings`, { headers })
       ]);
       
       const studData = await studRes.json();
       const payData = await payRes.json();
+      const settingsData = settingsRes.ok ? await settingsRes.json() : null;
 
       if (Array.isArray(studData)) setStudents(studData);
       if (Array.isArray(payData)) setPayments(payData);
+      if (settingsData) setFeeSettings(settingsData);
     } catch (err) {
       console.error("Error fetching report data:", err);
     } finally {
@@ -122,7 +128,10 @@ export default function ReportsPage() {
       // Loop month by month
       while (currentYear < endYear || (currentYear === endYear && currentMonth <= endMonth)) {
         // Add monthly hostel charge
-        cumulativeBalance += MONTHLY_FEE;
+        const rentCharge = feeSettings.hostelRentRate;
+        const lightCharge = feeSettings.lightBillRate;
+        const laundryCharge = student.laundryOpted ? feeSettings.laundryRate : 0;
+        cumulativeBalance += rentCharge + lightCharge + laundryCharge;
 
         // Find approved payments for this student in this specific month/year
         const approvedPaymentsForMonth = payments.filter((p) => {

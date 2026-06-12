@@ -111,7 +111,7 @@ export default function LandingPage() {
                 <Phone size={18} /> Call Now
               </a>
               <Link href="/fill_application_form" className="px-8 py-4 rounded-full glass-card hover:bg-white/5 transition-all font-semibold flex items-center gap-2">
-                <Download size={18} /> Fill Application Form
+                Fill Application Form
               </Link>
               <a href="https://wa.me/919881903999" target="_blank" rel="noreferrer" className="px-8 py-4 rounded-full glass-card hover:bg-white/5 transition-all font-semibold flex items-center gap-2">
                 WhatsApp

@@ -37,6 +37,7 @@ export default function StudentFeesPage() {
   const [laundry, setLaundry] = useState("0");
   const [laundryMonth, setLaundryMonth] = useState(currentLongMonth);
   const [balanceFeeMonth, setBalanceFeeMonth] = useState(currentLongMonth);
+  const [balanceFee, setBalanceFee] = useState("0");
   
   const [paymentMode, setPaymentMode] = useState("");
   const [transactionDate, setTransactionDate] = useState(new Date().toISOString().split('T')[0]);
@@ -49,9 +50,9 @@ export default function StudentFeesPage() {
     const rent = Number(hostelFee) || 0;
     const light = Number(lightBill) || 0;
     const laundryVal = Number(laundry) || 0;
-    const balanceVal = student?.balanceFee || 0;
+    const balanceVal = Number(balanceFee) || 0;
     setAmount(String(rent + light + laundryVal + balanceVal));
-  }, [hostelFee, lightBill, laundry, student]);
+  }, [hostelFee, lightBill, laundry, balanceFee]);
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -178,7 +179,7 @@ export default function StudentFeesPage() {
           hostelFee: Number(hostelFee) || 0,
           lightBill: Number(lightBill) || 0,
           laundry: student?.laundryOpted ? (Number(laundry) || 0) : 0,
-          balanceFee: student?.balanceFee || 0,
+          balanceFee: Number(balanceFee) || 0,
           sendingAccountName: paymentMode === "Cash" ? "CASH" : sendingAccountName,
           hostelFeeMonth,
           lightBillMonth,
@@ -251,9 +252,15 @@ export default function StudentFeesPage() {
                     <span className="text-white/60">Remaining Balance:</span>
                     <span className="text-white font-semibold">₹{(student?.balanceFee || 0).toLocaleString("en-IN")}</span>
                   </div>
+                  {Number(balanceFee) > 0 && (
+                    <div className="flex items-center justify-between text-sm text-emerald-400">
+                      <span>Paying Balance:</span>
+                      <span className="font-semibold">₹{(Number(balanceFee) || 0).toLocaleString("en-IN")}</span>
+                    </div>
+                  )}
                   <div className="border-t border-white/5 pt-3 flex items-center justify-between font-bold text-base text-primary">
                     <span>Total Payment:</span>
-                    <span>₹{((Number(hostelFee) || 0) + (Number(lightBill) || 0) + (Number(laundry) || 0) + (student?.balanceFee || 0)).toLocaleString("en-IN")}</span>
+                    <span>₹{((Number(hostelFee) || 0) + (Number(lightBill) || 0) + (Number(laundry) || 0) + (Number(balanceFee) || 0)).toLocaleString("en-IN")}</span>
                   </div>
                 </div>
 
@@ -275,18 +282,6 @@ export default function StudentFeesPage() {
                 )}
               </div>
             </div>
-
-            {/* QR Code Card */}
-            {paymentMode === "UPI / QR Scanner" && qrCodeUrl && (
-              <div className="glass-card p-6 rounded-3xl border border-white/5 bg-[#121214] flex flex-col items-center text-center">
-                <h4 className="text-sm font-bold text-white mb-3">Scan to Pay</h4>
-                <div className="w-44 h-44 bg-white p-2 rounded-2xl overflow-hidden relative shadow-lg">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={qrCodeUrl} alt="Payment QR Code" className="w-full h-full object-contain" />
-                </div>
-                <p className="text-[10px] text-muted-foreground mt-3 uppercase tracking-wider font-semibold">UPI QR Code for Hostel Fees</p>
-              </div>
-            )}
 
             {/* Payment Submission Form */}
             <div className="glass-card p-6 rounded-3xl border border-white/5 bg-[#121214]">
@@ -386,7 +381,7 @@ export default function StudentFeesPage() {
                   </div>
                 )}
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-muted-foreground">Remaining Balance (₹)</label>
                     <input
@@ -394,6 +389,18 @@ export default function StudentFeesPage() {
                       disabled
                       value={student?.balanceFee || 0}
                       className="w-full bg-[#16161a]/50 border border-white/5 rounded-xl py-3 px-4 text-muted-foreground focus:outline-none text-sm cursor-not-allowed"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-muted-foreground">Paying Balance Fee (₹)</label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={balanceFee}
+                      onChange={(e) => setBalanceFee(e.target.value)}
+                      className="w-full bg-[#16161a] border border-white/5 rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-1 focus:ring-primary/50 text-sm"
+                      placeholder="e.g. 0"
                     />
                   </div>
                   
@@ -423,6 +430,17 @@ export default function StudentFeesPage() {
                     <option value="Cash">Cash</option>
                   </select>
                 </div>
+
+                {paymentMode === "UPI / QR Scanner" && qrCodeUrl && (
+                  <div className="flex flex-col items-center justify-center p-6 rounded-2xl border border-white/5 bg-[#16161a] text-center my-4">
+                    <h4 className="text-sm font-bold text-white mb-3">Scan to Pay</h4>
+                    <div className="w-40 h-40 bg-white p-2 rounded-2xl overflow-hidden relative shadow-lg">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={qrCodeUrl} alt="Payment QR Code" className="w-full h-full object-contain" />
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-3 uppercase tracking-wider font-semibold">UPI QR Code for Hostel Fees</p>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">

@@ -27,4 +27,12 @@ export class CloudinaryService {
       uploadStream.end(file.buffer);
     });
   }
+
+  async uploadBase64(base64Str: string, folder: string = 'hostel'): Promise<string> {
+    const result = await cloudinary.uploader.upload(base64Str, {
+      folder: folder,
+      resource_type: 'auto',
+    });
+    return result.secure_url;
+  }
 }

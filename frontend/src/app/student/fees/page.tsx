@@ -7,6 +7,11 @@ import {
 } from "lucide-react";
 import ReceiptModal from "@/components/ReceiptModal";
 
+const MONTHS = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December"
+];
+
 export default function StudentFeesPage() {
   const [student, setStudent] = useState<any>(null);
   const [payments, setPayments] = useState<any[]>([]);
@@ -17,14 +22,34 @@ export default function StudentFeesPage() {
 
   const [amount, setAmount] = useState("5300");
   const [utr, setUtr] = useState("");
+  const [sendingAccountName, setSendingAccountName] = useState("");
+  const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedPaymentForReceipt, setSelectedPaymentForReceipt] = useState<any | null>(null);
 
+  const currentLongMonth = new Date().toLocaleString("en-US", { month: "long" });
+  const [hostelFeeMonth, setHostelFeeMonth] = useState(currentLongMonth);
+  const [lightBillMonth, setLightBillMonth] = useState(currentLongMonth);
+  const [laundry, setLaundry] = useState("0");
+  const [laundryMonth, setLaundryMonth] = useState(currentLongMonth);
+  const [balanceFeeMonth, setBalanceFeeMonth] = useState(currentLongMonth);
+  
+  const [paymentMode, setPaymentMode] = useState("");
+  const [transactionDate, setTransactionDate] = useState(new Date().toISOString().split('T')[0]);
+
   useEffect(() => {
     fetchData();
   }, []);
+
+  useEffect(() => {
+    const rent = 5000;
+    const light = 300;
+    const laundryVal = Number(laundry) || 0;
+    const balanceVal = student?.balanceFee || 0;
+    setAmount(String(rent + light + laundryVal + balanceVal));
+  }, [laundry, student]);
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -45,6 +70,13 @@ export default function StudentFeesPage() {
       if (studRes.ok) {
         const studData = await studRes.json();
         setStudent(studData);
+      }
+
+      // Fetch QR Code
+      const qrRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/fees/qr-code`, { headers });
+      if (qrRes.ok) {
+        const qrData = await qrRes.json();
+        setQrCodeUrl(qrData.url);
       }
 
       // Fetch all payments and filter for this student
@@ -123,7 +155,18 @@ export default function StudentFeesPage() {
           amount: Number(amount),
           utr,
           receiptUrl,
-          status: "PENDING"
+          status: "PENDING",
+          hostelFee: 5000,
+          lightBill: 300,
+          laundry: Number(laundry) || 0,
+          balanceFee: student?.balanceFee || 0,
+          sendingAccountName,
+          hostelFeeMonth,
+          lightBillMonth,
+          laundryMonth,
+          balanceFeeMonth,
+          paymentMode,
+          paymentDate: new Date(transactionDate).toISOString(),
         })
       });
 
@@ -133,8 +176,12 @@ export default function StudentFeesPage() {
       }
 
       setSuccess("Payment registered successfully! Admin will verify and approve shortly.");
-      setAmount("5300");
+      const nextBalance = student?.balanceFee || 0;
+      setAmount(String(5000 + 300 + 0 + nextBalance));
       setUtr("");
+      setSendingAccountName("");
+      setLaundry("0");
+      setPaymentMode("");
       setFile(null);
       setFilePreview(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -165,13 +212,32 @@ export default function StudentFeesPage() {
             {/* Status Card */}
             <div className="glass-card p-6 rounded-3xl border border-white/5 bg-[#121214] flex flex-col justify-between">
               <div>
-                <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">Billing Status</h3>
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-sm text-white font-medium">Monthly Rent:</span>
-                  <span className="text-sm text-white font-bold">₹5,300</span>
+                <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">Billing Breakdown</h3>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-white/60">Hostel Rent:</span>
+                    <span className="text-white font-semibold">₹5,000</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-white/60">Light Bill:</span>
+                    <span className="text-white font-semibold">₹300</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-white/60">Laundry Charges:</span>
+                    <span className="text-white font-semibold">₹{Number(laundry) || 0}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-white/60">Remaining Balance:</span>
+                    <span className="text-white font-semibold">₹{(student?.balanceFee || 0).toLocaleString("en-IN")}</span>
+                  </div>
+                  <div className="border-t border-white/5 pt-3 flex items-center justify-between font-bold text-base text-primary">
+                    <span>Total Payment:</span>
+                    <span>₹{(5000 + 300 + (Number(laundry) || 0) + (student?.balanceFee || 0)).toLocaleString("en-IN")}</span>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-sm text-white font-medium">This Month:</span>
+
+                <div className="flex items-center justify-between mt-5 mb-4 pt-3 border-t border-white/5">
+                  <span className="text-sm text-white font-medium">This Month Status:</span>
                   <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold uppercase ${
                     student?.feeStatus === "PAID" ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20" :
                     "bg-red-500/10 text-red-500 border border-red-500/20"
@@ -188,6 +254,18 @@ export default function StudentFeesPage() {
                 )}
               </div>
             </div>
+
+            {/* QR Code Card */}
+            {paymentMode === "UPI / QR Scanner" && qrCodeUrl && (
+              <div className="glass-card p-6 rounded-3xl border border-white/5 bg-[#121214] flex flex-col items-center text-center">
+                <h4 className="text-sm font-bold text-white mb-3">Scan to Pay</h4>
+                <div className="w-44 h-44 bg-white p-2 rounded-2xl overflow-hidden relative shadow-lg">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={qrCodeUrl} alt="Payment QR Code" className="w-full h-full object-contain" />
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-3 uppercase tracking-wider font-semibold">UPI QR Code for Hostel Fees</p>
+              </div>
+            )}
 
             {/* Payment Submission Form */}
             <div className="glass-card p-6 rounded-3xl border border-white/5 bg-[#121214]">
@@ -206,21 +284,119 @@ export default function StudentFeesPage() {
               )}
 
               <form onSubmit={handleSubmitPayment} className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-muted-foreground">Amount Paid (₹)</label>
-                  <input
-                    type="number"
-                    required
-                    min={1}
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    className="w-full bg-[#16161a] border border-white/5 rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-1 focus:ring-primary/50 text-sm"
-                    placeholder="e.g. 15000"
-                  />
+                {/* Month selectors for components */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-muted-foreground">Hostel Rent for Month</label>
+                    <select
+                      value={hostelFeeMonth}
+                      onChange={(e) => setHostelFeeMonth(e.target.value)}
+                      className="w-full bg-[#16161a] border border-white/5 rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-1 focus:ring-primary/50 text-sm"
+                    >
+                      {MONTHS.map(m => <option key={m} value={m}>{m}</option>)}
+                    </select>
+                  </div>
+                  
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-muted-foreground">Light Bill for Month</label>
+                    <select
+                      value={lightBillMonth}
+                      onChange={(e) => setLightBillMonth(e.target.value)}
+                      className="w-full bg-[#16161a] border border-white/5 rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-1 focus:ring-primary/50 text-sm"
+                    >
+                      {MONTHS.map(m => <option key={m} value={m}>{m}</option>)}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-muted-foreground">Laundry Charges (₹)</label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={laundry}
+                      onChange={(e) => setLaundry(e.target.value)}
+                      className="w-full bg-[#16161a] border border-white/5 rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-1 focus:ring-primary/50 text-sm"
+                      placeholder="e.g. 0"
+                    />
+                  </div>
+                  
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-muted-foreground">Laundry for Month</label>
+                    <select
+                      value={laundryMonth}
+                      onChange={(e) => setLaundryMonth(e.target.value)}
+                      className="w-full bg-[#16161a] border border-white/5 rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-1 focus:ring-primary/50 text-sm"
+                    >
+                      {MONTHS.map(m => <option key={m} value={m}>{m}</option>)}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-muted-foreground">Remaining Balance (₹)</label>
+                    <input
+                      type="number"
+                      disabled
+                      value={student?.balanceFee || 0}
+                      className="w-full bg-[#16161a]/50 border border-white/5 rounded-xl py-3 px-4 text-muted-foreground focus:outline-none text-sm cursor-not-allowed"
+                    />
+                  </div>
+                  
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-muted-foreground">Balance Fee for Month</label>
+                    <select
+                      value={balanceFeeMonth}
+                      onChange={(e) => setBalanceFeeMonth(e.target.value)}
+                      className="w-full bg-[#16161a] border border-white/5 rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-1 focus:ring-primary/50 text-sm"
+                    >
+                      {MONTHS.map(m => <option key={m} value={m}>{m}</option>)}
+                    </select>
+                  </div>
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-muted-foreground">UTR / Transaction ID</label>
+                  <label className="text-sm font-medium text-muted-foreground">Payment Mode *</label>
+                  <select
+                    required
+                    value={paymentMode}
+                    onChange={(e) => setPaymentMode(e.target.value)}
+                    className="w-full bg-[#16161a] border border-white/5 rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-1 focus:ring-primary/50 text-sm font-semibold"
+                  >
+                    <option value="">Select Payment Mode</option>
+                    <option value="UPI / QR Scanner">UPI / QR Scanner</option>
+                    <option value="Direct Bank Transfer">Direct Bank Transfer</option>
+                    <option value="Cash">Cash</option>
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-muted-foreground">Transaction Date *</label>
+                    <input
+                      type="date"
+                      required
+                      value={transactionDate}
+                      onChange={(e) => setTransactionDate(e.target.value)}
+                      className="w-full bg-[#16161a] border border-white/5 rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-1 focus:ring-primary/50 text-sm"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-muted-foreground">Grand Total (₹)</label>
+                    <input
+                      type="number"
+                      disabled
+                      value={amount}
+                      className="w-full bg-[#16161a]/30 border border-white/5 rounded-xl py-3 px-4 text-primary font-bold focus:outline-none text-sm cursor-not-allowed"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-muted-foreground">UTR / Transaction ID *</label>
                   <input
                     type="text"
                     required
@@ -228,6 +404,18 @@ export default function StudentFeesPage() {
                     onChange={(e) => setUtr(e.target.value)}
                     className="w-full bg-[#16161a] border border-white/5 rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-1 focus:ring-primary/50 text-sm"
                     placeholder="Enter 12-digit UTR or Txn ID"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-muted-foreground">Student Name / UPI Account Holder Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={sendingAccountName}
+                    onChange={(e) => setSendingAccountName(e.target.value)}
+                    className="w-full bg-[#16161a] border border-white/5 rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-1 focus:ring-primary/50 text-sm"
+                    placeholder="Account Holder's Name"
                   />
                 </div>
 

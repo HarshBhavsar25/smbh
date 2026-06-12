@@ -53,32 +53,63 @@ export default function ReceiptModal({ isOpen, onClose, payment }: ReceiptModalP
   }
 
   const feeRows: FeeRow[] = [];
-  if (isDeposit) {
-    feeRows.push({
-      type: "Hostel Deposit",
-      month: "----",
-      amount: payment.amount,
-    });
-  } else {
-    if (payment.amount >= 5000) {
+  if (payment.hostelFee !== undefined && payment.hostelFee !== null) {
+    if (payment.hostelFee > 0) {
       feeRows.push({
         type: "Hostel Rent",
-        month: getMonthName(payment.paymentDate),
-        amount: 5000,
+        month: payment.hostelFeeMonth || getMonthName(payment.paymentDate),
+        amount: payment.hostelFee,
       });
-      if (payment.amount > 5000) {
-        feeRows.push({
-          type: "Electricity Bill",
-          month: getPreviousMonthName(payment.paymentDate),
-          amount: payment.amount - 5000,
-        });
-      }
-    } else {
+    }
+    if (payment.lightBill > 0) {
       feeRows.push({
-        type: "Hostel Rent (Partial)",
-        month: getMonthName(payment.paymentDate),
+        type: "Electricity Bill",
+        month: payment.lightBillMonth || getPreviousMonthName(payment.paymentDate),
+        amount: payment.lightBill,
+      });
+    }
+    if (payment.laundry > 0) {
+      feeRows.push({
+        type: "Laundry Charges",
+        month: payment.laundryMonth || "----",
+        amount: payment.laundry,
+      });
+    }
+    if (payment.balanceFee > 0) {
+      feeRows.push({
+        type: "Previous Balance Due",
+        month: payment.balanceFeeMonth || "----",
+        amount: payment.balanceFee,
+      });
+    }
+  } else {
+    if (isDeposit) {
+      feeRows.push({
+        type: "Hostel Deposit",
+        month: "----",
         amount: payment.amount,
       });
+    } else {
+      if (payment.amount >= 5000) {
+        feeRows.push({
+          type: "Hostel Rent",
+          month: getMonthName(payment.paymentDate),
+          amount: 5000,
+        });
+        if (payment.amount > 5000) {
+          feeRows.push({
+            type: "Electricity Bill",
+            month: getPreviousMonthName(payment.paymentDate),
+            amount: payment.amount - 5000,
+          });
+        }
+      } else {
+        feeRows.push({
+          type: "Hostel Rent (Partial)",
+          month: getMonthName(payment.paymentDate),
+          amount: payment.amount,
+        });
+      }
     }
   }
 
@@ -209,20 +240,27 @@ export default function ReceiptModal({ isOpen, onClose, payment }: ReceiptModalP
                 </thead>
                 <tbody>
                   {feeRows.map((row, index) => (
-                    <tr key={index} className={index < feeRows.length - 1 ? "border-b border-black" : ""}>
+                    <tr key={index} className="border-b border-black">
                       <td className="border-r border-black py-3">{row.type}</td>
                       <td className="border-r border-black py-3">{row.month}</td>
                       <td className="py-3 font-bold">{row.amount}</td>
                     </tr>
                   ))}
+                  <tr className="font-bold bg-black/5">
+                    <td className="border-r border-black py-3 text-right pr-4" colSpan={2}>Grand Total:</td>
+                    <td className="py-3">Rs {payment.amount}</td>
+                  </tr>
                 </tbody>
               </table>
 
               <div className="pt-2 space-y-1">
                 <p className="font-bold">◆ Receipt Details :-</p>
                 <div className="pl-4 space-y-0.5">
-                  <p>Mode Of Payment :- <span className="font-semibold">Online</span></p>
-                  <p>Transaction No :- <span className="font-semibold">{utr}</span></p>
+                  <p>Mode Of Payment :- <span className="font-semibold">{payment.paymentMode || "Online"}</span></p>
+                  {payment.sendingAccountName && (
+                    <p>Account Holder Name :- <span className="font-semibold">{payment.sendingAccountName}</span></p>
+                  )}
+                  <p>Transaction No (UTR) :- <span className="font-semibold">{utr}</span></p>
                   <p>Transaction Date :- <span className="font-semibold">{txnDate}</span></p>
                 </div>
               </div>

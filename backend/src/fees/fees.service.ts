@@ -19,6 +19,17 @@ export class FeesService {
         utr: data.utr || null,
         receiptUrl: data.receiptUrl || null,
         paymentType: data.paymentType || 'HOSTEL_FEE',
+        hostelFee: data.hostelFee !== undefined ? Number(data.hostelFee) : 5000,
+        lightBill: data.lightBill !== undefined ? Number(data.lightBill) : 300,
+        laundry: data.laundry !== undefined ? Number(data.laundry) : 0,
+        balanceFee: data.balanceFee !== undefined ? Number(data.balanceFee) : 0,
+        sendingAccountName: data.sendingAccountName || null,
+        hostelFeeMonth: data.hostelFeeMonth || null,
+        lightBillMonth: data.lightBillMonth || null,
+        laundryMonth: data.laundryMonth || null,
+        balanceFeeMonth: data.balanceFeeMonth || null,
+        paymentMode: data.paymentMode || null,
+        paymentDate: data.paymentDate ? new Date(data.paymentDate) : new Date(),
       },
     });
 
@@ -78,9 +89,15 @@ export class FeesService {
       data: { status: 'PAID' },
     });
 
+    const currentBalance = payment.student?.balanceFee || 0;
+    const newBalance = Math.max(0, currentBalance - (payment.balanceFee || 0));
+
     await this.prisma.studentProfile.update({
       where: { id: payment.studentId },
-      data: { feeStatus: 'PAID' },
+      data: { 
+        feeStatus: 'PAID',
+        balanceFee: newBalance,
+      },
     });
 
     if (payment.student && payment.student.userId) {
@@ -116,6 +133,21 @@ export class FeesService {
   async remove(id: string) {
     return this.prisma.feePayment.delete({
       where: { id },
+    });
+  }
+
+  async getQrCode() {
+    const setting = await this.prisma.systemSetting.findUnique({
+      where: { key: 'qr_code_url' },
+    });
+    return { url: setting?.value || null };
+  }
+
+  async updateQrCode(url: string) {
+    return this.prisma.systemSetting.upsert({
+      where: { key: 'qr_code_url' },
+      update: { value: url },
+      create: { key: 'qr_code_url', value: url },
     });
   }
 }

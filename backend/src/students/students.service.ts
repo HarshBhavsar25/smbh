@@ -55,6 +55,9 @@ export class StudentsService {
       if (profileData.refundAmount !== undefined) {
         profileData.refundAmount = Number(profileData.refundAmount);
       }
+      if (profileData.balanceFee !== undefined) {
+        profileData.balanceFee = Number(profileData.balanceFee);
+      }
 
       // Prevent reactivating/unmarking a student who has already left
       if (student.hasLeft && (profileData.hasLeft === false || profileData.hasLeft === 'false')) {

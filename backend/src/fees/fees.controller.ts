@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, UseInterceptors, UploadedFile, Req, ForbiddenException } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { FeesService } from './fees.service';
 import { AuthGuard } from '@nestjs/passport';
@@ -11,6 +11,25 @@ export class FeesController {
     private readonly feesService: FeesService,
     private readonly cloudinaryService: CloudinaryService
   ) {}
+
+  @Get('qr-code')
+  async getQrCode() {
+    return this.feesService.getQrCode();
+  }
+
+  @Post('qr-code/upload')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadQrCode(@Req() req: any, @UploadedFile() file: Express.Multer.File) {
+    if (req.user.role !== 'ADMIN') {
+      throw new ForbiddenException('Only admin can upload QR code');
+    }
+    if (!file) {
+      throw new Error('No file uploaded');
+    }
+    const secureUrl = await this.cloudinaryService.uploadFile(file, 'qr_codes');
+    await this.feesService.updateQrCode(secureUrl);
+    return { url: secureUrl };
+  }
 
   @Post('upload')
   @UseInterceptors(FileInterceptor('file'))

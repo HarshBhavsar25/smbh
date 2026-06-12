@@ -82,6 +82,7 @@ model StudentProfile {
   
   securityDeposit Float    @default(0)
   refundAmount    Float    @default(0)
+  balanceFee    Float    @default(0)
   hasLeft         Boolean  @default(false)
   leftDate        DateTime?
   
@@ -129,6 +130,19 @@ model FeePayment {
   receiptUrl  String?
   utr         String?
   paymentType String   @default("HOSTEL_FEE")
+  
+  hostelFee   Float    @default(5000)
+  lightBill   Float    @default(300)
+  laundry     Float    @default(0)
+  balanceFee  Float    @default(0)
+  sendingAccountName String?
+  
+  hostelFeeMonth  String?
+  lightBillMonth  String?
+  laundryMonth    String?
+  balanceFeeMonth String?
+  paymentMode     String?
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
@@ -271,4 +285,110 @@ model AttendanceRecord {
   updatedAt    DateTime       @updatedAt
 
   @@unique([attendanceId, studentId])
+}
+
+model ApplicationForm {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Student Info - Personal Details
+  fullName      String
+  mobile        String
+  dob           String
+  gender        String
+  aadhaarNumber String
+  panNumber     String?
+  email         String
+  bloodGroup    String
+  photoUrl      String
+
+  // Student Info - Academic Details
+  collegeName   String
+  course        String
+  year          String
+  rollNumber    String
+  academicYear  String
+
+  // Student Info - Hostel Details
+  roomNumber    String
+  bedNumber     String?
+  admissionDate String
+  joiningDate   String
+  expectedStay  String
+
+  // Student Info - Documents
+  aadhaarCardUrl      String
+  panCardUrl          String
+  collegeIdUrl        String?
+  admissionReceiptUrl String?
+
+  // Parent / Guardian Info
+  parentName      String
+  fatherName      String
+  motherName      String
+  parentOccupation String
+  parentMobile    String
+  parentAltMobile String?
+  presentAddress  String
+  city            String
+  state           String
+  pinCode         String
+  parentAadhaar   String
+  parentPan       String
+
+  // Medical Info
+  hasChronicIllness       Boolean
+  illnessDescription      String?
+  requiresUrgentAttention String?
+  allergies               String?
+  familyDoctorName        String?
+  familyDoctorContact     String?
+  medicalBloodGroup       String
+
+  // Emergency Contact
+  emergencyName         String
+  emergencyRelationship String
+  emergencyMobile       String
+  emergencyAltMobile    String?
+
+  // Hostel Agreement Checkboxes
+  agreeHostelRules          Boolean
+  agreeFeeTerms             Boolean
+  agreeLockIn               Boolean
+  agreeSecurityRefund       Boolean
+  agreeDisciplinary         Boolean
+  agreeDamageRecovery       Boolean
+  agreeAlcoholProhibition   Boolean
+  agreeEntryExitRules       Boolean
+  studentSignatureUrl       String
+  agreementDate             String
+  agreementPlace            String
+
+  // Room Amenities
+  amenityCeilingFan           Boolean
+  amenityLocker               Boolean
+  amenityBed                  Boolean
+  amenityMattress             Boolean
+  amenityTubeLight            Boolean
+  amenityWaterGeyser          Boolean
+  existingDamageNotes         String?
+  roomConditionRemarks        String?
+  amenityConfirmation         Boolean
+  amenityStudentSignatureUrl String
+  amenityDate                 String
+
+  // Parent Acknowledgement
+  ackParentName         String
+  ackParentMobile       String
+  ackParentAddress      String
+  ackParentConfirmation Boolean
+  ackParentSignatureUrl String
+  ackParentDate         String
+  ackParentPlace        String
+}
+
+model SystemSetting {
+  key   String @id
+  value String
 }

@@ -79,6 +79,7 @@ export class AuthService {
           yearOfStudy: data.yearOfStudy,
           yearOfStudyOther: data.yearOfStudyOther,
           securityDeposit: data.securityDeposit ? Number(data.securityDeposit) : 0,
+          balanceFee: data.balanceFee ? Number(data.balanceFee) : 0,
         },
       });
     }

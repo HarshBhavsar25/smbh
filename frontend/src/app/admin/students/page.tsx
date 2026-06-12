@@ -34,6 +34,7 @@ const emptyStudent = {
   yearOfStudyOther: "",
   securityDeposit: "",
   refundAmount: "",
+  balanceFee: "0",
   hasLeft: false,
 };
 
@@ -79,6 +80,7 @@ export default function StudentsAdminPage() {
     yearOfStudyOther: "",
     securityDeposit: "",
     refundAmount: "",
+    balanceFee: "0",
     hasLeft: false,
   });
 
@@ -159,6 +161,7 @@ export default function StudentsAdminPage() {
       yearOfStudyOther: student.yearOfStudyOther || "",
       securityDeposit: student.securityDeposit !== undefined ? String(student.securityDeposit) : "",
       refundAmount: student.refundAmount !== undefined ? String(student.refundAmount) : "",
+      balanceFee: student.balanceFee !== undefined ? String(student.balanceFee) : "0",
       hasLeft: student.hasLeft || false,
     });
     setError("");
@@ -194,6 +197,7 @@ export default function StudentsAdminPage() {
         yearOfStudyOther: editForm.yearOfStudyOther,
         securityDeposit: Number(editForm.securityDeposit) || 0,
         refundAmount: Number(editForm.refundAmount) || 0,
+        balanceFee: Number(editForm.balanceFee) || 0,
         hasLeft: editForm.hasLeft,
       };
       if (editForm.newPassword.trim()) {
@@ -446,6 +450,11 @@ export default function StudentsAdminPage() {
                       }`}>
                         <CreditCard size={12} /> {student.feeStatus}
                       </span>
+                      {student.balanceFee !== undefined && student.balanceFee > 0 && (
+                        <div className="text-[11px] text-red-400 mt-1 font-semibold">
+                          Balance: ₹{student.balanceFee.toLocaleString("en-IN")}
+                        </div>
+                      )}
                     </td>
                     <td className="p-6 text-right">
                       <div className="flex items-center justify-end gap-2">
@@ -715,6 +724,16 @@ export default function StudentsAdminPage() {
                         onChange={(e) => setNewStudent({ ...newStudent, securityDeposit: e.target.value })}
                         className={INPUT_CLASS}
                         placeholder="e.g. 5000"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium text-muted-foreground">Pending Balance Fee (₹)</label>
+                      <input
+                        type="number"
+                        value={newStudent.balanceFee}
+                        onChange={(e) => setNewStudent({ ...newStudent, balanceFee: e.target.value })}
+                        className={INPUT_CLASS}
+                        placeholder="e.g. 0"
                       />
                     </div>
                   </div>
@@ -1135,6 +1154,16 @@ export default function StudentsAdminPage() {
                       />
                     </div>
                     <div className="space-y-1.5">
+                      <label className="text-sm font-medium text-muted-foreground">Pending Balance Fee (₹)</label>
+                      <input
+                        type="number"
+                        value={editForm.balanceFee}
+                        onChange={(e) => setEditForm({ ...editForm, balanceFee: e.target.value })}
+                        className={INPUT_CLASS}
+                        placeholder="e.g. 0"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
                       <label className="text-sm font-medium text-muted-foreground">Refund Amount Paid (₹)</label>
                       <input
                         type="number"
@@ -1345,6 +1374,12 @@ export default function StudentsAdminPage() {
                         <span className="text-xs text-muted-foreground block">Security Deposit</span>
                         <span className="text-white font-medium">
                           ₹{selectedStudent.securityDeposit || 0}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-xs text-muted-foreground block">Pending Balance Fee</span>
+                        <span className="text-white font-medium">
+                          ₹{selectedStudent.balanceFee || 0}
                         </span>
                       </div>
                       <div>

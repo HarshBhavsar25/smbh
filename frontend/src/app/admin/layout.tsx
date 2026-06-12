@@ -9,7 +9,7 @@ import {
   LayoutDashboard, Users, DoorClosed, 
   CreditCard, MessageSquare, Image as ImageIcon, 
   Settings, LogOut, Bell, Search, Plane, FileText, UserMinus,
-  Menu, X, CheckCheck, AlertCircle, Megaphone, BarChart3
+  Menu, X, CheckCheck, AlertCircle, Megaphone, BarChart3, FileCheck
 } from "lucide-react";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
@@ -111,6 +111,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const navItems = [
     { name: "Dashboard", href: "/admin", icon: <LayoutDashboard size={20} /> },
+    { name: "Applications", href: "/admin/applications", icon: <FileCheck size={20} /> },
     { name: "Residents", href: "/admin/students", icon: <Users size={20} /> },
     { name: "Rooms", href: "/admin/rooms", icon: <DoorClosed size={20} /> },
     { name: "Payments", href: "/admin/fees", icon: <CreditCard size={20} /> },

@@ -18,9 +18,11 @@ import { LeaveRequestsController } from './leaves/leaves.controller';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { AttendanceModule } from './attendance/attendance.module';
+import { ApplicationFormsModule } from './application-forms/application-forms.module';
 
 @Module({
   imports: [
+    ApplicationFormsModule,
     ScheduleModule.forRoot(),
     PrismaModule, 
     AuthModule, 

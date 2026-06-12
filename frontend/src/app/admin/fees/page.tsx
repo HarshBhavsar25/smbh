@@ -1,11 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
-  CreditCard, Plus, Trash2, Calendar, Users, Loader2, X, AlertTriangle, Check, Search, Eye, Filter 
+  CreditCard, Plus, Trash2, Calendar, Users, Loader2, X, AlertTriangle, 
+  Check, Search, Eye, Filter, Upload, Download, QrCode
 } from "lucide-react";
 import ReceiptModal from "@/components/ReceiptModal";
+
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+
+const MONTHS = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December"
+];
 
 export default function FeesAdminPage() {
   const [payments, setPayments] = useState<any[]>([]);
@@ -21,12 +29,29 @@ export default function FeesAdminPage() {
   const [timeFilter, setTimeFilter] = useState("ALL_TIME"); // ALL_TIME, THIS_MONTH, THIS_YEAR
   const [viewScreenshotUrl, setViewScreenshotUrl] = useState<string | null>(null);
   const [selectedPaymentForReceipt, setSelectedPaymentForReceipt] = useState<any | null>(null);
+  const [selectedPaymentDetails, setSelectedPaymentDetails] = useState<any | null>(null);
 
-  const [formData, setFormData] = useState({
+  // QR Code Settings
+  const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
+  const [isUploadingQr, setIsUploadingQr] = useState(false);
+  const qrInputRef = useRef<HTMLInputElement>(null);
+
+  // Manual payment recording form
+  const [formData, setFormData] = useState<any>({
     studentId: "",
-    amount: "",
+    hostelFee: "5000",
+    hostelFeeMonth: new Date().toLocaleString("en-US", { month: "long" }),
+    lightBill: "300",
+    lightBillMonth: new Date().toLocaleString("en-US", { month: "long" }),
+    laundry: "0",
+    laundryMonth: new Date().toLocaleString("en-US", { month: "long" }),
+    balanceFee: "0",
+    balanceFeeMonth: new Date().toLocaleString("en-US", { month: "long" }),
+    sendingAccountName: "",
     status: "PAID",
-    utr: ""
+    utr: "",
+    paymentMode: "Cash",
+    paymentDate: new Date().toISOString().split('T')[0]
   });
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -36,22 +61,41 @@ export default function FeesAdminPage() {
     fetchData();
   }, []);
 
+  // Sync remaining balance when student changes in manual payment modal
+  useEffect(() => {
+    if (formData.studentId) {
+      const selectedStudent = students.find(s => s.id === formData.studentId);
+      if (selectedStudent) {
+        setFormData((prev: any) => ({
+          ...prev,
+          balanceFee: String(selectedStudent.balanceFee || 0)
+        }));
+      }
+    }
+  }, [formData.studentId, students]);
+
   const fetchData = async () => {
     setIsLoading(true);
     const token = localStorage.getItem("token");
     const headers = { "Authorization": `Bearer ${token}` };
 
     try {
-      const payRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/fees`, { headers });
+      const payRes = await fetch(`${API}/fees`, { headers });
       const payData = await payRes.json();
       if (Array.isArray(payData)) {
         setPayments(payData);
       }
 
-      const studRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/students`, { headers });
+      const studRes = await fetch(`${API}/students`, { headers });
       const studData = await studRes.json();
       if (Array.isArray(studData)) {
         setStudents(studData);
+      }
+
+      const qrRes = await fetch(`${API}/fees/qr-code`, { headers });
+      if (qrRes.ok) {
+        const qrData = await qrRes.json();
+        setQrCodeUrl(qrData.url);
       }
     } catch (err) {
       console.error("Error fetching data", err);
@@ -61,16 +105,56 @@ export default function FeesAdminPage() {
   };
 
   const handleOpenModal = () => {
+    const currentLongMonth = new Date().toLocaleString("en-US", { month: "long" });
     setFormData({
       studentId: "",
-      amount: "",
+      hostelFee: "5000",
+      hostelFeeMonth: currentLongMonth,
+      lightBill: "300",
+      lightBillMonth: currentLongMonth,
+      laundry: "0",
+      laundryMonth: currentLongMonth,
+      balanceFee: "0",
+      balanceFeeMonth: currentLongMonth,
+      sendingAccountName: "",
       status: "PAID",
-      utr: ""
+      utr: "",
+      paymentMode: "Cash",
+      paymentDate: new Date().toISOString().split('T')[0]
     });
     setError("");
     setIsDropdownOpen(false);
     setDropdownSearch("");
     setIsModalOpen(true);
+  };
+
+  const handleQrCodeUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || !e.target.files[0]) return;
+    const file = e.target.files[0];
+    const token = localStorage.getItem("token");
+    const formData = new FormData();
+    formData.append("file", file);
+
+    setIsUploadingQr(true);
+    try {
+      const res = await fetch(`${API}/fees/qr-code/upload`, {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${token}` },
+        body: formData
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setQrCodeUrl(data.url);
+        alert("QR Code updated successfully!");
+      } else {
+        alert("Failed to upload QR Code.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error uploading QR Code.");
+    } finally {
+      setIsUploadingQr(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -79,8 +163,14 @@ export default function FeesAdminPage() {
     setError("");
 
     const token = localStorage.getItem("token");
+    const hFee = Number(formData.hostelFee) || 0;
+    const lBill = Number(formData.lightBill) || 0;
+    const laund = Number(formData.laundry) || 0;
+    const balFee = Number(formData.balanceFee) || 0;
+    const calculatedAmount = hFee + lBill + laund + balFee;
+
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/fees`, {
+      const res = await fetch(`${API}/fees`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -88,9 +178,20 @@ export default function FeesAdminPage() {
         },
         body: JSON.stringify({
           studentId: formData.studentId,
-          amount: Number(formData.amount),
+          amount: calculatedAmount,
           status: formData.status,
-          utr: formData.utr || "OFFLINE_RECORD"
+          utr: formData.utr || "OFFLINE_RECORD",
+          sendingAccountName: formData.sendingAccountName || "Cash / Direct Bank Transfer",
+          hostelFee: hFee,
+          lightBill: lBill,
+          laundry: laund,
+          balanceFee: balFee,
+          hostelFeeMonth: formData.hostelFeeMonth,
+          lightBillMonth: formData.lightBillMonth,
+          laundryMonth: formData.laundryMonth,
+          balanceFeeMonth: formData.balanceFeeMonth,
+          paymentMode: formData.paymentMode,
+          paymentDate: new Date(formData.paymentDate).toISOString()
         })
       });
 
@@ -112,12 +213,13 @@ export default function FeesAdminPage() {
   const handleApprove = async (id: string) => {
     const token = localStorage.getItem("token");
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/fees/${id}/approve`, {
+      const res = await fetch(`${API}/fees/${id}/approve`, {
         method: "PATCH",
         headers: { "Authorization": `Bearer ${token}` }
       });
       if (res.ok) {
         fetchData();
+        setSelectedPaymentDetails(null);
       }
     } catch (err) {
       console.error("Approve error", err);
@@ -128,12 +230,13 @@ export default function FeesAdminPage() {
     if (!confirm("Are you sure you want to reject this payment request?")) return;
     const token = localStorage.getItem("token");
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/fees/${id}/reject`, {
+      const res = await fetch(`${API}/fees/${id}/reject`, {
         method: "PATCH",
         headers: { "Authorization": `Bearer ${token}` }
       });
       if (res.ok) {
         fetchData();
+        setSelectedPaymentDetails(null);
       }
     } catch (err) {
       console.error("Reject error", err);
@@ -144,7 +247,7 @@ export default function FeesAdminPage() {
     if (!confirm("Are you sure you want to delete this payment record?")) return;
     const token = localStorage.getItem("token");
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/fees/${id}`, {
+      const res = await fetch(`${API}/fees/${id}`, {
         method: "DELETE",
         headers: { "Authorization": `Bearer ${token}` }
       });
@@ -158,7 +261,9 @@ export default function FeesAdminPage() {
 
   // Filter payments
   const filteredPayments = payments.filter((pay) => {
-    const nameMatch = pay.student?.fullName?.toLowerCase().includes(searchTerm.toLowerCase());
+    const nameMatch = pay.student?.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                      pay.sendingAccountName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                      pay.utr?.toLowerCase().includes(searchTerm.toLowerCase());
     const statusMatch = statusFilter === "ALL" || pay.status === statusFilter;
     
     // Time filter
@@ -189,17 +294,45 @@ export default function FeesAdminPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      
+      {/* Header and Quick Settings */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-white mb-2">Fee Management</h1>
           <p className="text-muted-foreground">Track billing collections, pending student fees, and verify uploads.</p>
         </div>
-        <button 
-          onClick={handleOpenModal}
-          className="px-5 py-2.5 bg-primary text-primary-foreground rounded-xl font-medium text-sm flex items-center gap-2 hover:bg-primary/90 transition-colors"
-        >
-          <Plus size={18} /> Record Fee Payment
-        </button>
+        
+        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+          {/* QR Code Upload Setting */}
+          <div className="relative">
+            <input 
+              type="file" 
+              ref={qrInputRef}
+              onChange={handleQrCodeUpload}
+              accept="image/*"
+              className="hidden"
+            />
+            <button 
+              onClick={() => qrInputRef.current?.click()}
+              disabled={isUploadingQr}
+              className="px-4 py-2.5 bg-white/5 hover:bg-white/10 text-white rounded-xl font-medium text-sm flex items-center gap-2 border border-white/5 transition-all"
+            >
+              {isUploadingQr ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <QrCode size={16} className="text-primary" />
+              )}
+              {qrCodeUrl ? "Change Portal QR Code" : "Upload UPI QR Code"}
+            </button>
+          </div>
+
+          <button 
+            onClick={handleOpenModal}
+            className="px-5 py-2.5 bg-primary text-primary-foreground rounded-xl font-medium text-sm flex items-center gap-2 hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20"
+          >
+            <Plus size={18} /> Record Fee Payment
+          </button>
+        </div>
       </div>
 
       {/* Analytics Grid */}
@@ -240,7 +373,7 @@ export default function FeesAdminPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
           <input
             type="text"
-            placeholder="Search resident..."
+            placeholder="Search resident, sender, UTR..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full bg-[#16161a] border border-white/5 rounded-xl py-2.5 pl-10 pr-4 text-white text-sm focus:outline-none focus:ring-1 focus:ring-primary/50"
@@ -369,7 +502,7 @@ export default function FeesAdminPage() {
               <thead>
                 <tr className="border-b border-white/5 bg-white/5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   <th className="p-6">Resident</th>
-                  <th className="p-6">UTR / Reference</th>
+                  <th className="p-6">Sender / UTR</th>
                   <th className="p-6">Transaction Date</th>
                   <th className="p-6">Amount Paid</th>
                   <th className="p-6">Status</th>
@@ -386,7 +519,10 @@ export default function FeesAdminPage() {
                       </div>
                     </td>
                     <td className="p-6">
-                      <code className="text-xs bg-white/5 text-white/80 px-2 py-1 rounded">{pay.utr || "N/A"}</code>
+                      <div className="text-white text-xs font-medium truncate max-w-[180px]" title={pay.sendingAccountName}>
+                        {pay.sendingAccountName || "N/A"}
+                      </div>
+                      <code className="text-[10px] bg-white/5 text-muted-foreground px-1.5 py-0.5 rounded mt-1 block w-fit">{pay.utr || "N/A"}</code>
                     </td>
                     <td className="p-6">
                       <div className="flex items-center gap-2 text-white">
@@ -400,6 +536,11 @@ export default function FeesAdminPage() {
                     </td>
                     <td className="p-6">
                       <div className="font-bold text-white">₹{pay.amount.toLocaleString("en-IN")}</div>
+                      {pay.hostelFee !== undefined && (
+                        <div className="text-[10px] text-muted-foreground mt-0.5">
+                          Rent: ₹{pay.hostelFee} | Light: ₹{pay.lightBill}
+                        </div>
+                      )}
                     </td>
                     <td className="p-6">
                       <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
@@ -410,36 +551,44 @@ export default function FeesAdminPage() {
                         <CreditCard size={12} /> {pay.status}
                       </span>
                     </td>
-                    <td className="p-6 text-right space-x-2">
+                    <td className="p-6 text-right space-x-2 whitespace-nowrap">
+                      <button
+                        onClick={() => setSelectedPaymentDetails(pay)}
+                        className="p-2 hover:bg-white/5 rounded-lg text-primary hover:text-white transition-colors"
+                        title="View Detailed Breakdown"
+                      >
+                        <Eye size={16} />
+                      </button>
+                      
                       {pay.receiptUrl && (
                         <button
                           onClick={() => setViewScreenshotUrl(pay.receiptUrl)}
-                          className="p-2 hover:bg-white/5 rounded-lg text-primary hover:text-primary-foreground transition-colors inline-flex items-center gap-1 text-xs"
-                          title="View Screenshot"
+                          className="px-2 py-1.5 bg-white/5 hover:bg-white/10 text-white rounded-lg text-xs transition-colors border border-white/5"
                         >
-                          <Eye size={16} /> Screenshot
+                          Screenshot
                         </button>
                       )}
+                      
                       {pay.status === "PAID" && (
                         <button
                           onClick={() => setSelectedPaymentForReceipt(pay)}
-                          className="p-2 hover:bg-white/5 rounded-lg text-emerald-500 hover:text-emerald-400 transition-colors inline-flex items-center gap-1 text-xs cursor-pointer"
-                          title="View Receipt"
+                          className="px-2 py-1.5 bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-500 rounded-lg text-xs transition-colors border border-emerald-500/10"
                         >
-                          <Eye size={16} /> Receipt
+                          Receipt
                         </button>
                       )}
+                      
                       {pay.status === "PENDING" && (
                         <>
                           <button
                             onClick={() => handleApprove(pay.id)}
-                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition-colors"
+                            className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition-colors"
                           >
                             Approve
                           </button>
                           <button
                             onClick={() => handleReject(pay.id)}
-                            className="px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white rounded-lg text-xs font-bold transition-colors"
+                            className="px-2.5 py-1.5 bg-red-600 hover:bg-red-500 text-white rounded-lg text-xs font-bold transition-colors"
                           >
                             Reject
                           </button>
@@ -474,7 +623,7 @@ export default function FeesAdminPage() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-md bg-[#121214] border border-white/5 rounded-3xl overflow-hidden shadow-2xl p-6 md:p-8 max-h-[90vh] flex flex-col"
+              className="w-full max-w-lg bg-[#121214] border border-white/5 rounded-3xl overflow-hidden shadow-2xl p-6 md:p-8 max-h-[90vh] flex flex-col"
             >
               <div className="flex justify-between items-center mb-4 flex-shrink-0">
                 <h3 className="text-xl font-bold text-white">Record Fee Transaction</h3>
@@ -489,7 +638,7 @@ export default function FeesAdminPage() {
                 </div>
               )}
 
-              <form onSubmit={handleSubmit} className="space-y-5 overflow-y-auto flex-1 pr-1 -mr-1">
+              <form onSubmit={handleSubmit} className="space-y-4 overflow-y-auto flex-1 pr-1 -mr-1">
                 <div className="space-y-2 relative">
                   <label className="text-sm font-medium text-muted-foreground">Select Resident</label>
                   
@@ -558,16 +707,143 @@ export default function FeesAdminPage() {
                   </div>
                 </div>
 
+                {/* Breakdown Inputs & Month selectors */}
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-muted-foreground uppercase">Hostel Rent (₹)</label>
+                      <input 
+                        type="number" 
+                        required
+                        value={formData.hostelFee}
+                        onChange={(e) => setFormData({...formData, hostelFee: e.target.value})}
+                        className="w-full bg-[#16161a] border border-white/5 rounded-xl py-2 px-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-primary/50"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-muted-foreground uppercase">Rent Month</label>
+                      <select
+                        value={formData.hostelFeeMonth}
+                        onChange={(e) => setFormData({...formData, hostelFeeMonth: e.target.value})}
+                        className="w-full bg-[#16161a] border border-white/5 rounded-xl py-2.5 px-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-primary/50"
+                      >
+                        {MONTHS.map(m => <option key={m} value={m}>{m}</option>)}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-muted-foreground uppercase">Light Bill (₹)</label>
+                      <input 
+                        type="number" 
+                        required
+                        value={formData.lightBill}
+                        onChange={(e) => setFormData({...formData, lightBill: e.target.value})}
+                        className="w-full bg-[#16161a] border border-white/5 rounded-xl py-2 px-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-primary/50"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-muted-foreground uppercase">Light Month</label>
+                      <select
+                        value={formData.lightBillMonth}
+                        onChange={(e) => setFormData({...formData, lightBillMonth: e.target.value})}
+                        className="w-full bg-[#16161a] border border-white/5 rounded-xl py-2.5 px-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-primary/50"
+                      >
+                        {MONTHS.map(m => <option key={m} value={m}>{m}</option>)}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-muted-foreground uppercase">Laundry (₹)</label>
+                      <input 
+                        type="number" 
+                        required
+                        value={formData.laundry}
+                        onChange={(e) => setFormData({...formData, laundry: e.target.value})}
+                        className="w-full bg-[#16161a] border border-white/5 rounded-xl py-2 px-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-primary/50"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-muted-foreground uppercase">Laundry Month</label>
+                      <select
+                        value={formData.laundryMonth}
+                        onChange={(e) => setFormData({...formData, laundryMonth: e.target.value})}
+                        className="w-full bg-[#16161a] border border-white/5 rounded-xl py-2.5 px-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-primary/50"
+                      >
+                        {MONTHS.map(m => <option key={m} value={m}>{m}</option>)}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-muted-foreground uppercase">Balance Due (₹)</label>
+                      <input 
+                        type="number" 
+                        required
+                        value={formData.balanceFee}
+                        onChange={(e) => setFormData({...formData, balanceFee: e.target.value})}
+                        className="w-full bg-[#16161a] border border-white/5 rounded-xl py-2 px-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-primary/50"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-muted-foreground uppercase">Balance Month</label>
+                      <select
+                        value={formData.balanceFeeMonth}
+                        onChange={(e) => setFormData({...formData, balanceFeeMonth: e.target.value})}
+                        className="w-full bg-[#16161a] border border-white/5 rounded-xl py-2.5 px-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-primary/50"
+                      >
+                        {MONTHS.map(m => <option key={m} value={m}>{m}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Live Calculated Total */}
+                <div className="p-3 bg-[#16161a] rounded-xl border border-white/5 flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground font-medium">Calculated Grand Total:</span>
+                  <span className="font-bold text-primary text-base">
+                    ₹{((Number(formData.hostelFee)||0) + (Number(formData.lightBill)||0) + (Number(formData.laundry)||0) + (Number(formData.balanceFee)||0)).toLocaleString()}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-muted-foreground">Payment Mode</label>
+                    <select
+                      value={formData.paymentMode}
+                      onChange={(e) => setFormData({...formData, paymentMode: e.target.value})}
+                      className="w-full bg-[#16161a] border border-white/5 rounded-xl py-2.5 px-4 text-sm text-white focus:outline-none focus:ring-1 focus:ring-primary/50 font-semibold"
+                    >
+                      <option value="Cash">Cash</option>
+                      <option value="UPI / QR Scanner">UPI / QR Scanner</option>
+                      <option value="Direct Bank Transfer">Direct Bank Transfer</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-muted-foreground">Transaction Date</label>
+                    <input
+                      type="date"
+                      required
+                      value={formData.paymentDate}
+                      onChange={(e) => setFormData({...formData, paymentDate: e.target.value})}
+                      className="w-full bg-[#16161a] border border-white/5 rounded-xl py-2.5 px-4 text-sm text-white focus:outline-none focus:ring-1 focus:ring-primary/50"
+                    />
+                  </div>
+                </div>
+
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-muted-foreground">Amount Paid (₹)</label>
+                  <label className="text-sm font-medium text-muted-foreground">Student Name / UPI Account Holder Name</label>
                   <input 
-                    type="number" 
-                    required
-                    min={1}
-                    value={formData.amount}
-                    onChange={(e) => setFormData({...formData, amount: e.target.value})}
-                    className="w-full bg-[#16161a] border border-white/5 rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-1 focus:ring-primary/50"
-                    placeholder="e.g. 15000"
+                    type="text"
+                    value={formData.sendingAccountName}
+                    onChange={(e) => setFormData({...formData, sendingAccountName: e.target.value})}
+                    className="w-full bg-[#16161a] border border-white/5 rounded-xl py-2.5 px-4 text-sm text-white focus:outline-none focus:ring-1 focus:ring-primary/50"
+                    placeholder="e.g. Rahul Sharma"
                   />
                 </div>
 
@@ -577,7 +853,7 @@ export default function FeesAdminPage() {
                     type="text"
                     value={formData.utr}
                     onChange={(e) => setFormData({...formData, utr: e.target.value})}
-                    className="w-full bg-[#16161a] border border-white/5 rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-1 focus:ring-primary/50"
+                    className="w-full bg-[#16161a] border border-white/5 rounded-xl py-2.5 px-4 text-sm text-white focus:outline-none focus:ring-1 focus:ring-primary/50"
                     placeholder="e.g. 123456789012"
                   />
                 </div>
@@ -587,7 +863,7 @@ export default function FeesAdminPage() {
                   <select 
                     value={formData.status}
                     onChange={(e) => setFormData({...formData, status: e.target.value})}
-                    className="w-full bg-[#16161a] border border-white/5 rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-1 focus:ring-primary/50"
+                    className="w-full bg-[#16161a] border border-white/5 rounded-xl py-2.5 px-4 text-sm text-white focus:outline-none focus:ring-1 focus:ring-primary/50"
                   >
                     <option value="PAID">Paid</option>
                     <option value="PARTIAL">Partial Payment</option>
@@ -599,14 +875,14 @@ export default function FeesAdminPage() {
                   <button 
                     type="button"
                     onClick={() => setIsModalOpen(false)}
-                    className="px-5 py-3 rounded-xl border border-white/5 bg-[#16161a] hover:bg-white/5 transition-colors text-white font-semibold text-sm"
+                    className="px-5 py-2.5 rounded-xl border border-white/5 bg-[#16161a] hover:bg-white/5 transition-colors text-white font-semibold text-sm"
                   >
                     Cancel
                   </button>
                   <button 
                     type="submit"
                     disabled={isSubmitting}
-                    className="px-5 py-3 rounded-xl bg-primary hover:bg-primary/90 transition-all text-primary-foreground font-semibold text-sm flex items-center gap-2"
+                    className="px-5 py-2.5 rounded-xl bg-primary hover:bg-primary/90 transition-all text-primary-foreground font-semibold text-sm flex items-center gap-2"
                   >
                     {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : "Record Payment"}
                   </button>
@@ -641,6 +917,113 @@ export default function FeesAdminPage() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Transaction Details Modal */}
+      <AnimatePresence>
+        {selectedPaymentDetails && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-md bg-[#121214] border border-white/5 rounded-3xl overflow-hidden shadow-2xl p-6 md:p-8"
+            >
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-lg font-bold text-white">Payment Breakdown Details</h3>
+                <button onClick={() => setSelectedPaymentDetails(null)} className="text-muted-foreground hover:text-white transition-colors">
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="space-y-4 text-sm text-white">
+                <div>
+                  <span className="text-xs text-muted-foreground uppercase block">Resident Name</span>
+                  <span className="font-semibold">{selectedPaymentDetails.student?.fullName || "N/A"}</span>
+                </div>
+                <div>
+                  <span className="text-xs text-muted-foreground uppercase block">Sender Account Name</span>
+                  <span className="font-semibold">{selectedPaymentDetails.sendingAccountName || "N/A"}</span>
+                </div>
+                <div>
+                  <span className="text-xs text-muted-foreground uppercase block">UTR / Transaction ID</span>
+                  <code className="text-xs bg-white/5 px-2 py-0.5 rounded">{selectedPaymentDetails.utr || "N/A"}</code>
+                </div>
+
+                <div className="border-t border-white/5 pt-4 space-y-2.5">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Hostel Rent {selectedPaymentDetails.hostelFeeMonth ? `(${selectedPaymentDetails.hostelFeeMonth})` : ""}:</span>
+                    <span>₹{(selectedPaymentDetails.hostelFee ?? 0).toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Light Bill {selectedPaymentDetails.lightBillMonth ? `(${selectedPaymentDetails.lightBillMonth})` : ""}:</span>
+                    <span>₹{(selectedPaymentDetails.lightBill ?? 0).toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Laundry {selectedPaymentDetails.laundryMonth ? `(${selectedPaymentDetails.laundryMonth})` : ""}:</span>
+                    <span>₹{(selectedPaymentDetails.laundry ?? 0).toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Balance Due {selectedPaymentDetails.balanceFeeMonth ? `(${selectedPaymentDetails.balanceFeeMonth})` : ""}:</span>
+                    <span>₹{(selectedPaymentDetails.balanceFee ?? 0).toLocaleString()}</span>
+                  </div>
+                  <div className="border-t border-white/5 pt-2 flex justify-between font-bold text-primary text-base">
+                    <span>Total Amount Paid:</span>
+                    <span>₹{(selectedPaymentDetails.amount ?? 0).toLocaleString()}</span>
+                  </div>
+                </div>
+
+                <div className="border-t border-white/5 pt-4 space-y-2">
+                  <div>
+                    <span className="text-xs text-muted-foreground uppercase block">Payment Mode</span>
+                    <span className="font-semibold">{selectedPaymentDetails.paymentMode || "Online"}</span>
+                  </div>
+                  <div>
+                    <span className="text-xs text-muted-foreground uppercase block">Transaction Date</span>
+                    <span className="font-semibold">
+                      {new Date(selectedPaymentDetails.paymentDate).toLocaleDateString("en-IN", {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric"
+                      })}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="border-t border-white/5 pt-4 flex justify-end gap-2.5">
+                  {selectedPaymentDetails.status === "PENDING" && (
+                    <>
+                      <button
+                        onClick={() => handleApprove(selectedPaymentDetails.id)}
+                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-colors"
+                      >
+                        Approve Payment
+                      </button>
+                      <button
+                        onClick={() => handleReject(selectedPaymentDetails.id)}
+                        className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-bold transition-colors"
+                      >
+                        Reject
+                      </button>
+                    </>
+                  )}
+                  {selectedPaymentDetails.status === "PAID" && (
+                    <button
+                      onClick={() => {
+                        setSelectedPaymentForReceipt(selectedPaymentDetails);
+                        setSelectedPaymentDetails(null);
+                      }}
+                      className="px-4 py-2 bg-primary text-primary-foreground rounded-xl text-xs font-bold hover:bg-primary/95 transition-all"
+                    >
+                      View Print Receipt
+                    </button>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       <ReceiptModal
         isOpen={!!selectedPaymentForReceipt}
         onClose={() => setSelectedPaymentForReceipt(null)}

@@ -90,18 +90,80 @@
     border-color: #cbd5e1 !important;
   }
 
-  /* text-white → dark foreground */
-  [class*="text-white"]:not([class*="text-white\/60"]):not([class*="text-white\/40"]):not([class*="text-white\/20"]):not([class*="bg-"]) {
+  /* Make all text-white and text-white/80 etc. dark by default */
+  .text-white,
+  [class*="text-white"] {
     color: #0f172a !important;
   }
-  [class*="text-white\/60"] {
+  
+  [class*="text-white/"] {
+    color: #334155 !important;
+  }
+
+  [class*="text-white/80"],
+  [class*="text-white/70"] {
+    color: #334155 !important;
+  }
+
+  [class*="text-white/60"],
+  [class*="text-white/50"] {
     color: #64748b !important;
   }
-  [class*="text-white\/40"] {
+
+  [class*="text-white/40"],
+  [class*="text-white/30"],
+  [class*="text-white/20"] {
     color: #94a3b8 !important;
   }
-  [class*="text-white\/20"] {
-    color: #cbd5e1 !important;
+
+  /* Make other light text utilities dark */
+  [class*="text-slate-100"], [class*="text-slate-200"], [class*="text-slate-300"], [class*="text-slate-400"],
+  [class*="text-zinc-100"], [class*="text-zinc-200"], [class*="text-zinc-300"], [class*="text-zinc-400"],
+  [class*="text-gray-100"], [class*="text-gray-200"], [class*="text-gray-300"], [class*="text-gray-400"] {
+    color: #334155 !important;
+  }
+
+  /* Keep text white in buttons, colored pills, badges, status labels, etc. */
+  .bg-primary .text-white,
+  .bg-primary [class*="text-white"],
+  .bg-secondary .text-white,
+  .bg-secondary [class*="text-white"],
+  .bg-destructive .text-white,
+  .bg-destructive [class*="text-white"],
+  [class*="bg-primary"] .text-white,
+  [class*="bg-primary"] [class*="text-white"],
+  [class*="bg-secondary"] .text-white,
+  [class*="bg-secondary"] [class*="text-white"],
+  [class*="bg-blue-"] .text-white,
+  [class*="bg-blue-"] [class*="text-white"],
+  [class*="bg-emerald-"] .text-white,
+  [class*="bg-emerald-"] [class*="text-white"],
+  [class*="bg-red-"] .text-white,
+  [class*="bg-red-"] [class*="text-white"],
+  [class*="bg-green-"] .text-white,
+  [class*="bg-green-"] [class*="text-white"],
+  [class*="bg-violet-"] .text-white,
+  [class*="bg-violet-"] [class*="text-white"],
+  [class*="bg-gradient-"] .text-white,
+  [class*="bg-gradient-"] [class*="text-white"],
+  [class*="bg-gradient-"] span,
+  [class*="bg-gradient-"] div,
+  [class*="bg-gradient-"] p,
+  [class*="bg-gradient-"] h1,
+  [class*="bg-gradient-"] h2,
+  [class*="bg-gradient-"] h3 {
+    color: #ffffff !important;
+  }
+
+  /* Specific buttons/badges that should have white text */
+  .bg-primary,
+  .bg-secondary,
+  .bg-destructive,
+  [class*="bg-primary"],
+  [class*="bg-secondary"],
+  [class*="bg-destructive"],
+  [class*="bg-gradient-to-"] {
+    color: #ffffff !important;
   }
 
   /* white/[0.01], white/[0.02], white/[0.05] hover bg → very light */

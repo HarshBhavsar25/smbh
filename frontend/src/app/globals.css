@@ -18,7 +18,7 @@
   --color-secondary-foreground: #ffffff;
   
   --color-muted: #e2e8f0;
-  --color-muted-foreground: #64748b;
+  --color-muted-foreground: #475569;
   
   --color-accent: #0891b2; /* Cyan 600 */
   --color-accent-foreground: #ffffff;
@@ -116,11 +116,23 @@
     color: #94a3b8 !important;
   }
 
-  /* Make other light text utilities dark */
+  /* Make other light/medium grey text utilities dark for readability */
   [class*="text-slate-100"], [class*="text-slate-200"], [class*="text-slate-300"], [class*="text-slate-400"],
   [class*="text-zinc-100"], [class*="text-zinc-200"], [class*="text-zinc-300"], [class*="text-zinc-400"],
   [class*="text-gray-100"], [class*="text-gray-200"], [class*="text-gray-300"], [class*="text-gray-400"] {
-    color: #334155 !important;
+    color: #475569 !important; /* slate-600 */
+  }
+
+  [class*="text-slate-500"], [class*="text-zinc-500"], [class*="text-gray-500"], [class*="text-neutral-500"], [class*="text-stone-500"] {
+    color: #475569 !important; /* slate-600 */
+  }
+
+  [class*="text-slate-600"], [class*="text-zinc-600"], [class*="text-gray-600"], [class*="text-neutral-600"], [class*="text-stone-600"] {
+    color: #334155 !important; /* slate-700 */
+  }
+
+  [class*="text-slate-700"], [class*="text-zinc-700"], [class*="text-gray-700"], [class*="text-neutral-700"], [class*="text-stone-700"] {
+    color: #1e293b !important; /* slate-800 */
   }
 
   /* Keep text white in buttons, colored pills, badges, status labels, etc. */

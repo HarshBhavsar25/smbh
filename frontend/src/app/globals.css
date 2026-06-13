@@ -91,47 +91,47 @@
   }
 
   /* Make all text-white and text-white/80 etc. dark by default */
-  .text-white,
-  [class*="text-white"] {
+  .text-white {
     color: #0f172a !important;
   }
   
-  [class*="text-white/"] {
+  .text-white\/95,
+  .text-white\/90,
+  .text-white\/85,
+  .text-white\/80,
+  .text-white\/75,
+  .text-white\/70 {
     color: #334155 !important;
   }
 
-  [class*="text-white/80"],
-  [class*="text-white/70"] {
-    color: #334155 !important;
-  }
-
-  [class*="text-white/60"],
-  [class*="text-white/50"] {
+  .text-white\/60,
+  .text-white\/50 {
     color: #64748b !important;
   }
 
-  [class*="text-white/40"],
-  [class*="text-white/30"],
-  [class*="text-white/20"] {
+  .text-white\/40,
+  .text-white\/30,
+  .text-white\/20,
+  .text-white\/10 {
     color: #94a3b8 !important;
   }
 
   /* Make other light/medium grey text utilities dark for readability */
-  [class*="text-slate-100"], [class*="text-slate-200"], [class*="text-slate-300"], [class*="text-slate-400"],
-  [class*="text-zinc-100"], [class*="text-zinc-200"], [class*="text-zinc-300"], [class*="text-zinc-400"],
-  [class*="text-gray-100"], [class*="text-gray-200"], [class*="text-gray-300"], [class*="text-gray-400"] {
+  .text-slate-100, .text-slate-200, .text-slate-300, .text-slate-400,
+  .text-zinc-100, .text-zinc-200, .text-zinc-300, .text-zinc-400,
+  .text-gray-100, .text-gray-200, .text-gray-300, .text-gray-400 {
     color: #475569 !important; /* slate-600 */
   }
 
-  [class*="text-slate-500"], [class*="text-zinc-500"], [class*="text-gray-500"], [class*="text-neutral-500"], [class*="text-stone-500"] {
+  .text-slate-500, .text-zinc-500, .text-gray-500, .text-neutral-500, .text-stone-500 {
     color: #475569 !important; /* slate-600 */
   }
 
-  [class*="text-slate-600"], [class*="text-zinc-600"], [class*="text-gray-600"], [class*="text-neutral-600"], [class*="text-stone-600"] {
+  .text-slate-600, .text-zinc-600, .text-gray-600, .text-neutral-600, .text-stone-600 {
     color: #334155 !important; /* slate-700 */
   }
 
-  [class*="text-slate-700"], [class*="text-zinc-700"], [class*="text-gray-700"], [class*="text-neutral-700"], [class*="text-stone-700"] {
+  .text-slate-700, .text-zinc-700, .text-gray-700, .text-neutral-700, .text-stone-700 {
     color: #1e293b !important; /* slate-800 */
   }
 
@@ -200,17 +200,17 @@
     background-color: #e2e8f0 !important;
   }
 
-  /* placeholder dark → light placeholder */
-  [class*="placeholder\:text-white\/20"]::placeholder {
-    color: #cbd5e1 !important;
-  }
-
-  /* Inputs: override dark bg ring */
+  /* Placeholders & Inputs override */
   input, select, textarea {
-    color: #0f172a;
+    color: #0f172a !important;
+    background-color: #f1f5f9 !important;
   }
-  input::placeholder, textarea::placeholder {
-    color: #94a3b8;
+  
+  input::placeholder,
+  textarea::placeholder,
+  ::placeholder {
+    color: #94a3b8 !important;
+    opacity: 1 !important;
   }
 }
 

@@ -173,7 +173,58 @@ export default function AdminApplicationsPage() {
             <div class="field"><div class="label">Alternate Mobile</div><div class="value">${app.emergencyAltMobile || "N/A"}</div></div>
           </div>
 
-          <div class="section-title">5. Hostel Agreement & Undertaking Rules Accepted</div>
+          <div class="page-break"></div>
+
+          <!-- Important Instructions Page -->
+          <div style="margin-top: 0; padding: 0;">
+            <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 12px; margin-bottom: 20px;">
+              <h1 style="font-size: 18px; font-weight: bold; text-transform: uppercase; margin: 0; letter-spacing: 0.5px;">Shree Mauli Boys Hostel</h1>
+              <p style="margin: 4px 0 0 0; font-size: 11px; color: #555;">299, Janawadi, Off Senapati Bapat Road, Pune – 411016 | Contact: +91 98819 03999</p>
+            </div>
+
+            <div style="text-align: center; margin-bottom: 20px;">
+              <h2 style="font-size: 15px; font-weight: bold; text-decoration: underline; text-transform: uppercase; margin: 0; letter-spacing: 0.5px;">Important Instructions for Students Residing in the Hostel</h2>
+            </div>
+
+            <div style="background: #f7f7f7; border: 1px solid #ddd; border-radius: 4px; padding: 20px 24px;">
+              <ol style="margin: 0; padding-left: 20px; line-height: 2.2; font-size: 13px; color: #222;">
+                <li>Students must carefully follow all hostel rules and regulations.</li>
+                <li>The electricity bill amount will be shared equally among the students residing in the same room.</li>
+                <li>The cost of the agreement/contract to be executed between the hostel and the student shall be shared by both parties.</li>
+                <li>It is mandatory for students to return to the hostel by <strong>10:00 PM</strong>. Entry into the hostel will not be permitted after this time.</li>
+                <li>If parents or any other visitors wish to meet a student, they will not be allowed direct access to the student's room. Meetings must take place in the <strong>hostel parking area</strong>. No unauthorized person is allowed to enter the rooms.</li>
+                <li>If a student wishes to go anywhere other than their college, they must obtain prior permission from the hostel warden/management.</li>
+                <li>Hostel fees must be deposited into the hostel account between the <strong>1st and 5th of every month</strong>.</li>
+                <li>The security deposit collected at the time of admission is subject to a <strong>6-month lock-in period</strong>. If a student leaves the hostel before completing 6 months, the security deposit will not be refunded.</li>
+                <li>Maintaining peace and discipline within the hostel premises is essential. Students must avoid shouting, creating disturbances, engaging in misconduct in common areas, or any activity that disrupts the peace and harmony of the hostel.</li>
+              </ol>
+            </div>
+
+            <div style="margin-top: 30px; padding: 16px; border: 1px dashed #999; border-radius: 4px; background: #fff;">
+              <p style="font-size: 12px; color: #333; margin: 0 0 20px 0; line-height: 1.6;">
+                I, <strong>${app.fullName || '___________________________'}</strong>, have read and understood all the above instructions and agree to abide by them during my stay at Shree Mauli Boys Hostel. I acknowledge that violation of any of these rules may result in disciplinary action, including expulsion from the hostel.
+              </p>
+              <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 30px;">
+                <div>
+                  <p style="font-size: 11px; margin: 0;"><strong>Place:</strong> ${app.agreementPlace || '_______________'}</p>
+                  <p style="font-size: 11px; margin: 4px 0 0 0;"><strong>Date:</strong> ${app.agreementDate || '_______________'}</p>
+                </div>
+                <div style="text-align: center;">
+                  ${app.studentSignatureUrl ? `<img src="${app.studentSignatureUrl}" style="width:150px; height:50px; object-fit:contain; border-bottom:1px solid #000; margin-bottom:4px; ${app.studentSignatureUrl.startsWith('data:image') ? 'filter:invert(1);' : ''}" />` : `<div style="width:150px; height:50px; border-bottom:1px solid #000; margin-bottom:4px;"></div>`}
+                  <div style="font-size: 10px; text-transform: uppercase; font-weight: bold; color: #555;">Student Signature</div>
+                </div>
+                <div style="text-align: center;">
+                  ${app.ackParentSignatureUrl ? `<img src="${app.ackParentSignatureUrl}" style="width:150px; height:50px; object-fit:contain; border-bottom:1px solid #000; margin-bottom:4px; ${app.ackParentSignatureUrl.startsWith('data:image') ? 'filter:invert(1);' : ''}" />` : `<div style="width:150px; height:50px; border-bottom:1px solid #000; margin-bottom:4px;"></div>`}
+                  <div style="font-size: 10px; text-transform: uppercase; font-weight: bold; color: #555;">Parent / Guardian Signature</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- End Important Instructions Page -->
+
+          <div class="page-break"></div>
+
+          <div class="section-title" style="margin-top:0;">5. Hostel Agreement & Undertaking Rules Accepted</div>
           <div style="font-size: 11px; color: #444; line-height: 1.5; margin-bottom: 10px;">
             Student has explicitly read and accepted the following rules online:
           </div>
